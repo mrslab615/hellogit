@@ -55,7 +55,7 @@ float Vector_Angle_d(const Vector3 &v1, const Vector3 &v2);
 void rotate_THETA_then_PHI(Vector3* R1, int n, float THETA, float PHI);
 //Vector3 generate_Ant(const float &THETA, const float &PHI,
 //		const float &distance, Vector3 *antr, Vector3 *antt);
-void GenrateAperture(const float&THETA, const float &PHI, const float &distance,
+void genrateAperture(const float&THETA, const float &PHI, const float &distance,
 		const float cellSize, const int rnum,const int tnum,
 		const float &Lx, const float &Ly, const int xdnum, const int ydnum, Vector3 *antr, Vector3 *antt,
 		Vector3  &ant_N);
@@ -73,10 +73,57 @@ public:
 	int ray_center;
 
 };
+//
+
+
+void calEquationTwentySeven(const CXV3 *E, const float &k0,
+		const float cellSize, const int tnum, const Vector3 &theta_h,
+		const Vector3 &phi_h, CXF &Atheta, CXF &Aphi){
+	CXF* SingleRayAtheta = new CXF[tnum];
+	CXF* SingleRayAphi = new CXF[tnum];
+	CXF expvalue = CXF(1,0);
+	CXF Ex, Ey;
+	float Ii = 1.0;
+
+	Atheta = CXF(0, 0);
+	Aphi = CXF(0, 0);
+	for(int i = 0 ; i < tnum ; i++){
+
+			Ex = E[i] * phi_h;
+		//	if ( Ex!=CXF(0,0)){
+		//	cout<<"Ex ="<<Ex<<endl;
+		//	}
+			Ey = E[i] * theta_h;
+		//	if ( Ey!=CXF(0,0)){
+		// 	cout<<"Ey ="<<Ey<<endl;
+		//	}
+		//	cout<<"Ey ="<<Ey<<endl;
+
+		//	float Phi_p; //Phi for paper
+
+			if (Ex == CXF(0, 0) && Ey == CXF(0, 0)) {
+
+				SingleRayAtheta[i] = CXF(0, 0);
+				SingleRayAphi[i] = CXF(0, 0);
+			} else {
+
+				SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii);
+		//			cout<<"Atheta= "<<Atheta<<endl;
+				SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii);
+		//			cout<<"Aphi= "<<Aphi<<endl;
+
+			}
 
 
 
+			Atheta += SingleRayAtheta[i];
+			Aphi += SingleRayAphi[i];
+	}
+	delete[] SingleRayAtheta;
+	delete[] SingleRayAphi;
 
+
+}
 
 
 
@@ -123,8 +170,8 @@ int main(int argc, char *argv[]) {
 
 //	CXV3* Ec_antr = new CXV3[rnum];
 	CXV3* Ec_tube = new CXV3[tnum];
-	double* RCSTheta = new double[tnum];
-	double* RCSPhi =new double[tnum];
+	double* RCSTheta = new double[901];
+	double* RCSPhi =new double[901];
 	Vector3* retpoint_antr = new Vector3[rnum]; //The Return point on incident plane
 	Vector3* refpoint_antr = new Vector3[rnum]; //The source point on the object
 	Vector3* retpoint_tube = new Vector3[tnum]; //The Return point on incident plane
@@ -160,10 +207,10 @@ int main(int argc, char *argv[]) {
 	}
 	Lib3dsMesh* mesh = fin->meshes;
 	size_t num_face = mesh->faces;
-	size_t num_vert = mesh->points;
+//	size_t num_vert = mesh->points;
 
 	cout<<"#Face ="<<num_face<<endl;
-	cout<<"#Vertex="<<num_vert<<endl;
+//	cout<<"#Vertex="<<num_vert<<endl;
 
 	Lib3dsPoint* vert = mesh->pointL;
 	Lib3dsFace* face = mesh->faceL;
@@ -205,7 +252,7 @@ int main(int argc, char *argv[]) {
 
 //		kt_in[0] = generate_Ant(THETA, PHI, distance, antr, tube);
 
-		GenrateAperture(THETA, PHI, distance, cellSize, rnum, tnum,Lx,
+		genrateAperture(THETA, PHI, distance, cellSize, rnum, tnum, Lx,
 				Ly, xdnum, ydnum, antr, tube, kt_in[0]);
 
 		//  for (int i = 0; i < rnum; i++) {
@@ -347,40 +394,46 @@ int main(int argc, char *argv[]) {
 
 //		}
 
+	 calEquationTwentySeven(Ec_tube, k0,
+				cellSize, tnum, theta_h,
+				phi_h, Atheta_total[0], Aphi_total[0]);
 
-		for (int n = 0; n < tnum; n++) {
 
-
-			equation_twenty_seven(Ec_tube[n], k0, cellSize, retpoint_tube[n],
-					theta_h, phi_h, Atheta[n], Aphi[n]);
-
-			float denom2 = 2;
-			Atheta[n] = j * k0 * Atheta[n] / PI / denom2;
-			Aphi[n] = j * k0 * Aphi[n] / PI / denom2;
-//					cout << "Aphi=";
-//					cout << Aphi[n] << endl;
-		}
-		Atheta_total[0] = CXF(0, 0);
-		Aphi_total[0] = CXF(0, 0);
-
-		for (int n = 0; n < tnum; n++) {
-			Atheta_total[0] += Atheta[n];
-			Aphi_total[0] += Aphi[n];
-
-		}
+//		for (int n = 0; n < tnum; n++) {
+//
+//			equation_twenty_seven(Ec_tube[n], k0, cellSize, retpoint_tube[n],
+//					theta_h, phi_h, Atheta[n], Aphi[n]);
+//
+////			float denom2 = 2;
+////			Atheta[n] = j * k0 * Atheta[n] / PI / denom2;
+////			Aphi[n] = j * k0 * Aphi[n] / PI / denom2;
+////					cout << "Aphi=";
+////					cout << Aphi[n] << endl;
+//		}
+//		Atheta_total[0] = CXF(0, 0);
+//		Aphi_total[0] = CXF(0, 0);
+//
+//
+//		for (int n = 0; n < tnum; n++) {
+//			Atheta_total[0] += Atheta[n];
+//			Aphi_total[0] += Aphi[n];
+//
+//		}
 
 //		cout << "complex Atheta = " << Atheta_total[0] << endl;
 //		cout << "complex Aphi = " << Aphi_total[0] << endl;
 
 		//	cout<<PI*4*abs(Atheta_total[0])<<endl;
-		cout << "RCS(phi) ="
-				<< 10 * log10(PI * 4 * abs(Aphi_total[0]) * abs(Aphi_total[0]))
-				<< " dBsm" << endl;
-		cout << "RCS(theta) ="<<
-				 10* log10(PI * 4 * abs(Atheta_total[0])* abs(Atheta_total[0])) << " dBsm"
-				<< endl;
+
 		RCSTheta[i] = 10* log10(PI * 4 * abs(Atheta_total[0]) * abs(Atheta_total[0]));
 		RCSPhi[i]=10 * log10(PI * 4 * abs(Aphi_total[0]) * abs(Aphi_total[0]));
+
+		cout << "RCS(phi) ="
+				<< RCSTheta[i]
+				<< " dBsm" << endl;
+		cout << "RCS(theta) ="<<
+				RCSPhi[i]<< " dBsm"
+				<< endl;
 
 //		float sigma = 8 * PI * 0.3 * 0.3 * 0.3 * 0.3 / lambda / lambda;
 //		sigma = 4 * PI * 0.8 * 0.8 * 0.8 * 0.8 / lambda / lambda;
@@ -393,43 +446,43 @@ int main(int argc, char *argv[]) {
 //	cout<<POL<<endl;
 
 
-	if(POL == "V"){
-
-	ofstream file("ThetapolRcsTheta.out");
-	for (int i = 0; i <= 900; i++) {
-		file << RCSTheta[i] <<endl;
-//		file << RCSPhi[i] << endl;
-
-		ifstream ifile("ThetapolRcsTheta.out");
-	}
-	file.close();
-
-	ofstream file1("ThetapolRcsPhi.out");
-	for (int i = 0; i <= 900; i++) {
+//	if(POL == "V"){
+//
+//	ofstream file("ThetapolRcsTheta.out");
+//	for (int i = 0; i <= 900; i++) {
 //		file << RCSTheta[i] <<endl;
-		file1 << RCSPhi[i] << endl;
-		ifstream ifile1("ThetaPolRcsPhi.out");
-	}
-	file1.close();
-	}else{
-		ofstream file("PhipolRcsTheta.out");
-		for (int i = 0; i <= 900; i++) {
-			file << RCSTheta[i] <<endl;
-	//		file << RCSPhi[i] << endl;
-
-			ifstream ifile("PhipolRcsTheta.out");
-		}
-		file.close();
-
-		ofstream file1("PhipolRcsPhi.out");
-		for (int i = 0; i <= 900; i++) {
-	//		file << RCSTheta[i] <<endl;
-			file1 << RCSPhi[i] << endl;
-			ifstream ifile1("PhipolRcsPhi.out");
-		}
-		file1.close();
-
-	}
+////		file << RCSPhi[i] << endl;
+//
+//		ifstream ifile("ThetapolRcsTheta.out");
+//	}
+//	file.close();
+//
+//	ofstream file1("ThetapolRcsPhi.out");
+//	for (int i = 0; i <= 900; i++) {
+////		file << RCSTheta[i] <<endl;
+//		file1 << RCSPhi[i] << endl;
+//		ifstream ifile1("ThetaPolRcsPhi.out");
+//	}
+//	file1.close();
+//	}else{
+//		ofstream file("PhipolRcsTheta.out");
+//		for (int i = 0; i <= 900; i++) {
+//			file << RCSTheta[i] <<endl;
+//	//		file << RCSPhi[i] << endl;
+//
+//			ifstream ifile("PhipolRcsTheta.out");
+//		}
+//		file.close();
+//
+//		ofstream file1("PhipolRcsPhi.out");
+//		for (int i = 0; i <= 900; i++) {
+//	//		file << RCSTheta[i] <<endl;
+//			file1 << RCSPhi[i] << endl;
+//			ifstream ifile1("PhipolRcsPhi.out");
+//		}
+//		file1.close();
+//
+//	}
 
 
 
@@ -707,7 +760,8 @@ void rotate_THETA_then_PHI(Vector3 *R1, int n, float THETA, float PHI) {
 //	return ant_N;
 //
 //}
-void equation_twenty_seven(const CXV3 &E, const float &k0, const float cellSize, const Vector3 retpoint, const Vector3 &theta_h,
+void equation_twenty_seven(const CXV3 &E, const float &k0, const float cellSize,
+		const Vector3 retpoint, const Vector3 &theta_h,
 		const Vector3 &phi_h, CXF &Atheta, CXF &Aphi) {
 
 
@@ -717,9 +771,7 @@ void equation_twenty_seven(const CXV3 &E, const float &k0, const float cellSize,
 //	float Xi = retpoint * phi_h;
 //	float Yi = retpoint * theta_h;
 //	cout<<Xi<<","<<Yi<<endl;
-	float Ii = 1.0;
 //	cout << "E=" << E.x << "," << E.y << "," << E.z << endl;
-
 //	CXF expvalue = exp(j * k0 * (Sx * Xi * +Sy * Yi));
 	CXF expvalue = CXF(1,0);
 	CXF Ex;
@@ -732,27 +784,29 @@ void equation_twenty_seven(const CXV3 &E, const float &k0, const float cellSize,
 //	if ( Ey!=CXF(0,0)){
 // 	cout<<"Ey ="<<Ey<<endl;
 //	}
-
-
 //	cout<<"Ey ="<<Ey<<endl;
 
 //	float Phi_p; //Phi for paper
+	float Ii = 1.0;
+
 	if (Ex == CXF(0, 0) && Ey == CXF(0, 0)) {
 
 		Atheta = CXF(0, 0);
 		Aphi = CXF(0, 0);
 	} else {
 
-		Atheta = ( Ey ) * expvalue * cellSize * cellSize* (Ii);
+		Atheta = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii);
 //			cout<<"Atheta= "<<Atheta<<endl;
-		Aphi = (Ex ) * expvalue * cellSize * cellSize * (Ii);
+		Aphi = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii);
 //			cout<<"Aphi= "<<Aphi<<endl;
 
 	}
 
+
+
 }
 
-void GenrateAperture(const float&THETA, const float &PHI, const float &distance,
+void genrateAperture(const float&THETA, const float &PHI, const float &distance,
 		const float cellSize, const int rnum,const int tnum,
 		const float &Lx, const float &Ly, const int xdnum, const int ydnum, Vector3 *antr, Vector3 *antt,
 		Vector3  &ant_N){
