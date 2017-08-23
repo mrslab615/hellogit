@@ -6,9 +6,9 @@
 //! Node for storing state information during traversal.
 struct BVHTraversal {
   uint32_t i; // Node
-  float mint; // Minimum hit time for this node.
+  double mint; // Minimum hit time for this node.
   BVHTraversal() { }
-  BVHTraversal(int _i, float _mint) : i(_i), mint(_mint) { }
+  BVHTraversal(int _i, double _mint) : i(_i), mint(_mint) { }
 };
 
 //! - Compute the nearest intersection of all objects within the tree.
@@ -19,7 +19,7 @@ struct BVHTraversal {
 bool BVH::getIntersection(const Ray& ray, IntersectionInfo* intersection, bool occlusion) const {
   intersection->t = 999999999.f;
   intersection->object = NULL;
-  float bbhits[4];
+  double bbhits[4];
   int32_t closer, other;
 
   // Working set
@@ -33,7 +33,7 @@ bool BVH::getIntersection(const Ray& ray, IntersectionInfo* intersection, bool o
   while(stackptr>=0) {
     // Pop off the next node to work on.
     int ni = todo[stackptr].i;
-    float near = todo[stackptr].mint;
+    double near = todo[stackptr].mint;
     stackptr--;
     const BVHFlatNode &node(flatTree[ ni ]);
 
@@ -207,7 +207,7 @@ void BVH::build()
     uint32_t split_dim = bc.maxDimension();
 
     // Split on the center of the longest axis
-    float split_coord = .5f * (bc.min[split_dim] + bc.max[split_dim]);
+    double split_coord = .5f * (bc.min[split_dim] + bc.max[split_dim]);
 
     // Partition the list of objects on this split
     uint32_t mid = start;

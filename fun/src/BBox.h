@@ -11,11 +11,11 @@ struct BBox {
   BBox(const Vector3& min, const Vector3& max);
   BBox(const Vector3& p);
 
-  bool intersect(const Ray& ray, float *tnear, float *tfar) const;
+  bool intersect(const Ray& ray, double *tnear, double *tfar) const;
   void expandToInclude(const Vector3& p);
   void expandToInclude(const BBox& b);
   uint32_t maxDimension() const;
-  float surfaceArea() const;
+  double surfaceArea() const;
 };
 
 #endif

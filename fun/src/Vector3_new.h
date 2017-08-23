@@ -9,10 +9,10 @@
 
 
 struct Vector3 {
-  struct { float x,y,z; };
+  struct { double x,y,z; };
 
   Vector3() { }
-  Vector3(float x, float y, float z) : x(x),y(y),z(z) { }
+  Vector3(double x, double y, double z) : x(x),y(y),z(z) { }
 
 //  float x(){ return x; }
 //  float y(){ return y; }
@@ -20,15 +20,15 @@ struct Vector3 {
 
   Vector3 operator+(const Vector3& b) const { return Vector3(x+b.x, y+b.y, z+b.z); }
   Vector3 operator-(const Vector3& b) const { return Vector3(x-b.x, y-b.y, z-b.z); }
-  Vector3 operator*(float b) const { return Vector3(x*b, y*b, z*b); }
-  Vector3 operator/(float b) const { return Vector3(x/b, y/b, z/b); }
+  Vector3 operator*(double b) const { return Vector3(x*b, y*b, z*b); }
+  Vector3 operator/(double b) const { return Vector3(x/b, y/b, z/b); }
 
   // Component-wise multiply and divide
   Vector3 cmul(const Vector3& b) const { return Vector3(x*b.x, y*b.y, z*b.z); }
   Vector3 cdiv(const Vector3& b) const { return Vector3(x/b.x, y/b.y, z/b.z); }
 
   // dot (inner) product
-  float operator*(const Vector3& b) const {
+  double operator*(const Vector3& b) const {
     return x*b.x + y*b.y + z*b.z;
   }
 
@@ -41,11 +41,11 @@ struct Vector3 {
   Vector3 operator/(const Vector3& b) const { return Vector3(x/b.x, y/b.y, z/b.z); }
 
   // Handy component indexing
-  float& operator[](const unsigned int i) { return (&x)[i]; }
-  const float& operator[](const unsigned int i) const { return (&x)[i]; }
+  double& operator[](const unsigned int i) { return (&x)[i]; }
+  const double& operator[](const unsigned int i) const { return (&x)[i]; }
 };
 
-inline Vector3 operator*(float a, const Vector3&b)  { return Vector3(a*b.x,a*b.y,a*b.z); }
+inline Vector3 operator*(double a, const Vector3&b)  { return Vector3(a*b.x,a*b.y,a*b.z); }
 
 // Component-wise min
 inline Vector3 min(const Vector3& a, const Vector3& b) {
@@ -58,13 +58,13 @@ inline Vector3 max(const Vector3& a, const Vector3& b) {
 }
 
 // Length of a vector
-inline float length(const Vector3& a) {
+inline double length(const Vector3& a) {
   return sqrtf(a*a);
 }
 
 // Make a vector unit length
 inline Vector3 normalize(const Vector3& in) {
-  float norm = sqrt(in.x*in.x + in.y*in.y + in.z*in.z);
+  double norm = sqrt(in.x*in.x + in.y*in.y + in.z*in.z);
   return Vector3(in.x/norm, in.y/norm, in.z/norm);
 }
 

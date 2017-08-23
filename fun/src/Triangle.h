@@ -8,16 +8,16 @@ using namespace std;
 
 
 // 取三浮點數最大值
-float Max3( float a1,  float a2,  float a3){
-	float out = a1;
+double Max3( double a1,  double a2,  double a3){
+	double out = a1;
 	if(a2 > out){ out = a2; }
 	if(a3 > out){ out = a3; }
 	return out;
 }
 
 // 取三浮點數最小值
-float Min3(float a1, float a2, float a3){
-	float out = a1;
+double Min3(double a1, double a2, double a3){
+	double out = a1;
 	if(a2 < out){ out = a2; }
 	if(a3 < out){ out = a3; }
 	return out;
@@ -54,13 +54,13 @@ public:
 	// 取Bounding box定義
 	BBox getBBox() const {
 
-		float x_min = Min3(v0.x, v1.x, v2.x);
-		float y_min = Min3(v0.y, v1.y, v2.y);
-		float z_min = Min3(v0.z, v1.z, v2.z);
+		double x_min = Min3(v0.x, v1.x, v2.x);
+		double y_min = Min3(v0.y, v1.y, v2.y);
+		double z_min = Min3(v0.z, v1.z, v2.z);
 
-		float x_max = Max3(v0.x, v1.x, v2.x);
-		float y_max = Max3(v0.y, v1.y, v2.y);
-		float z_max = Max3(v0.z, v1.z, v2.z);
+		double x_max = Max3(v0.x, v1.x, v2.x);
+		double y_max = Max3(v0.y, v1.y, v2.y);
+		double z_max = Max3(v0.z, v1.z, v2.z);
 		
 		return BBox(Vector3(x_min,y_min,z_min), Vector3(x_max,y_max,z_max));
 	}
@@ -72,7 +72,7 @@ public:
 		Vector3 v0v1 = v1 - v0;
 		Vector3 v0v2 = v2 - v0;
 		Vector3 pvec = ray.d ^ v0v2;	// cross product
-		float det = v0v1 * pvec;	// inner product
+		double det = v0v1 * pvec;	// inner product
 
 		// if the determinant is negative the triangle is backfacing
 		// if the determinant is close to 0, the ray misses the triangle
@@ -82,14 +82,14 @@ public:
 
 
 
-		float invDet = 1 / det;
+		double invDet = 1 / det;
 
 		Vector3 tvec = ray.o - v0;
-		float u = (tvec * pvec) * invDet;
+		double u = (tvec * pvec) * invDet;
 		if (u < 0 || u > 1) return false;
 
 		Vector3 qvec = tvec ^ v0v1;
-		float v = (ray.d * qvec) * invDet;
+		double v = (ray.d * qvec) * invDet;
 		if (v < 0 || u + v > 1) return false;
 
 		I->object = this;

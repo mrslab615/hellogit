@@ -20,7 +20,7 @@
 
 using namespace std;
 
-typedef complex<float> CXF;
+typedef complex<double> CXF;
 
 class CXV3 {
 public:
@@ -38,7 +38,7 @@ public:
 	//new function
 	CXV3 operator+(const Vector3 &b) const { return CXV3(x+b.x, y+b.y, z+b.z); }
 	CXF  operator*(const Vector3 &b) const { return (x*b.x + y*b.y+z*b.z);}	// dot (inner) product
-	CXV3 operator*(const float &b) const { return CXV3(x*b, y*b, z*b); }
+	CXV3 operator*(const double &b) const { return CXV3(x*b, y*b, z*b); }
 
 
 
