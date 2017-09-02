@@ -39,6 +39,16 @@ const double c = 299792458;
 const CXF j = CXF(0, 1);
 const int maxhitnumber = 3;
 
+class RayIndex {
+public:
+	int ray_one;
+	int ray_two;
+	int ray_three;
+	int ray_four;
+	int ray_center;
+
+};
+
 
 //
 //static const int xdnum = Nx / dx;
@@ -59,19 +69,18 @@ void genrateAperture(const double&THETA, const double &PHI, const double &distan
 		const double cellSize, const int rnum,const int tnum,
 		const double &Lx, const double &Ly, const int xdnum, const int ydnum, Vector3 *antr, Vector3 *antt,
 		Vector3  &ant_N);
-//void Raytube_Numbering(Vector3 *antr, Vector3 *antt);
 void equation_twenty_seven(const CXV3 &E, const double &k0, const double cellSize, const Vector3 retpoint, const Vector3 &theta_h,
 		const Vector3 &phi_h, CXF &Atheta, CXF &Aphi);
 double SafeAcos(double x);
 
 void calEquationTwentySeven(const CXV3 *E, const double &k0,
 		const double &cellSize, const int &tnum, const Vector3 &theta_h,
-		const Vector3 &phi_h, const double &PHI, const double *IR_Angle, CXF &Atheta, CXF &Aphi);
-
+		const Vector3 &phi_h, const double &PHI, const double *IR_Angle, Vector3 *retpoint_antr,
+		CXF &Atheta, CXF &Aphi);
 
 void AllrayGeoOpt(const int &tnum, const Vector3 *tube, const BVH &bvh, const Vector3 &kin,
 		const Vector3 &Ein, Vector3 *refpoint_tube, Vector3 *k_tube, Vector3 *E_tube,
-		double *kdr_tube, int *hitnum_tube);
+		double *kdr_tube, int *hitnum_tube, int &OneAngleNumberOfHit);
 
 int GeoOpt(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Vector3 &Ein,
 		Vector3 &hitpoint, Vector3 &kdir, Vector3 &Eout, double &t);
@@ -82,20 +91,21 @@ void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta
 void initializeEF(const string &POL, const Vector3 &kin, Vector3 &theta_h, Vector3 &phi_h,
 		Vector3 &Ei);
 
-void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, Vector3 *k_tube,
+//void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, Vector3 *k_tube,
+//		const Vector3 *tube, const Vector3 *refpoint_tube, const double *kdr_tube,
+//		const double f, const Vector3 *E_tube,
+//		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
+//		CXV3 *Ec_tube, double *IR_Angle);
+void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const Vector3 *k_tube, Vector3 *k_antr,
+		RayIndex *index,const int xdnum,
 		const Vector3 *tube, const Vector3 *refpoint_tube, const double *kdr_tube,
 		const double f, const Vector3 *E_tube,
 		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
 		CXV3 *Ec_tube, double *IR_Angle);
-class RayIndex {
-public:
-	int ray_one;
-	int ray_two;
-	int ray_three;
-	int ray_four;
-	int ray_center;
+void Raytube_Numbering(const int &tnum, const int &xdnum, const Vector3 *antr, const Vector3 *antt, RayIndex *index) ;
 
-};
+void getAngleData(const int &PointOfAngle, const int *OneAngleNumberOfHit);
+
 //
 
 
@@ -139,7 +149,7 @@ int main(int argc, char *argv[]) {
 	double* IR_Angle = new double[tnum];
 
 
-//	CXV3* Ec_antr = new CXV3[rnum];
+	CXV3* Ec_antr = new CXV3[rnum];
 	CXV3* Ec_tube = new CXV3[tnum];
 	double* RCSTheta = new double[PointOfAngle];
 	double* RCSPhi =new double[PointOfAngle];
@@ -151,6 +161,7 @@ int main(int argc, char *argv[]) {
 	CXF* Aphi = new CXF[tnum];
 	CXF* Atheta_total = new CXF[1];
 	CXF* Aphi_total = new CXF[1];
+	int* OneAngleNumberOfHit = new int[PointOfAngle];
 
 
 	bool *return_hit = new bool[tnum];
@@ -228,24 +239,40 @@ int main(int argc, char *argv[]) {
 
 
 
+
 		initializeEF(POL, kt_in[0], theta_h, phi_h, Ei);
 
 
 
-		AllrayGeoOpt(tnum,tube,bvh,kt_in[0],Ei,  refpoint_tube,  k_tube,  E_tube, kdr_tube,
-				hitnum_tube);
+		AllrayGeoOpt(tnum, tube ,bvh, kt_in[0], Ei, refpoint_tube,  k_tube,  E_tube, kdr_tube,
+				hitnum_tube, OneAngleNumberOfHit[i]);
 
 
-		 AllEF(tnum, hitnum_tube, kt_in, k_tube,
+//		AllrayGeoOpt(rnum, antr ,bvh, kt_in[0], Ei, refpoint_antr,  k_antr,  E_antr, kdr_antr,
+//				hitnum_antr);
+
+
+
+
+		 AllEF(tnum, hitnum_tube, kt_in, k_tube, k_antr, index, xdnum,
 				tube, refpoint_tube, kdr_tube,
 				f, E_tube,
 				kdr_tuber, retpoint_tube, total_path_tube,
 				Ec_tube, IR_Angle);
 
+//			for (int n = 0; n<tnum ; n++){
+//				intersectPlane((-1 * kt_in[0]), tube[0], refpoint_tube[n],  k_tube[n], kdr_tuber[n]);
+//				retpoint_tube[n] = refpoint_tube[n] + kdr_tuber[n] * k_tube[n];
+//
+//				intersectPlane((-1 * kt_in[0]), tube[0], refpoint_antr[n],  k_antr[n], kdr_antrr[n]);
+//				retpoint_antr[n] = refpoint_antr[n] + kdr_antrr[n] * k_antr[n];
+//
+//				}
+
 
 	 calEquationTwentySeven(Ec_tube, k0,
 				cellSize, tnum, theta_h,
-				phi_h, PHI, IR_Angle, Atheta_total[0], Aphi_total[0]);
+				phi_h, PHI, IR_Angle, retpoint_antr, Atheta_total[0], Aphi_total[0]);
 
 
 		RCSTheta[i] = 10* log10(PI * 4 * abs(Atheta_total[0]) * abs(Atheta_total[0]));
@@ -260,6 +287,8 @@ int main(int argc, char *argv[]) {
 
 
 	}
+	getAngleData(PointOfAngle, OneAngleNumberOfHit);
+
 	getMatlabData(POL, PointOfAngle, RCSTheta, RCSPhi);
 
 
@@ -279,7 +308,7 @@ int main(int argc, char *argv[]) {
 	delete[] kdr_antrr; //reflection point
 	delete[] kdr_tuber; //reflection point
 
-//	delete[] Ec_antr;
+	delete[] Ec_antr;
 	delete[] Ec_tube;
 
 	delete[] retpoint_antr; //The Return point on incident plane
@@ -297,6 +326,8 @@ int main(int argc, char *argv[]) {
 	delete[] RCSTheta;
 	delete[] RCSPhi;
 	delete[] IR_Angle;
+	delete[] OneAngleNumberOfHit;
+
 	cout << (double)clock() / CLOCKS_PER_SEC << " S";
 	return 0;
 
@@ -542,13 +573,15 @@ void rotate_THETA_then_PHI(Vector3 *R1, int n, double THETA, double PHI) {
 
 void AllrayGeoOpt(const int &tnum, const Vector3 *tube, const BVH &bvh, const Vector3 &kin,
 		const Vector3 &Ein, Vector3 *refpoint_tube, Vector3 *k_tube, Vector3 *E_tube,
-		double *kdr_tube, int *hitnum_tube){
+		double *kdr_tube, int *hitnum_tube, int &OneAngleNumberOfHit){
 	for (int n = 0; n < tnum; n++) {
 //			k_tube[n] =
 //			E_tube[n] = Ei;
 		//		cout<<n<<endl;
 		hitnum_tube[n] = GeoOpt(tube[n], bvh,  kin, Ein, refpoint_tube[n], k_tube[n],
 				E_tube[n], kdr_tube[n]);
+		OneAngleNumberOfHit+=hitnum_tube[n];
+
 	}
 
 }
@@ -600,7 +633,8 @@ void equation_twenty_seven(const CXV3 &E, const double &k0, const double cellSiz
 
 void calEquationTwentySeven(const CXV3 *E, const double &k0,
 		const double &cellSize, const int &tnum, const Vector3 &theta_h,
-		const Vector3 &phi_h, const double &PHI, const double *IR_Angle, CXF &Atheta, CXF &Aphi){
+		const Vector3 &phi_h, const double &PHI, const double *IR_Angle, Vector3 *retpoint_antr,
+		CXF &Atheta, CXF &Aphi){
 	CXF* SingleRayAtheta = new CXF[tnum];
 	CXF* SingleRayAphi = new CXF[tnum];
 	CXF expvalue = CXF(1,0);
@@ -630,14 +664,21 @@ void calEquationTwentySeven(const CXV3 *E, const double &k0,
 			} else {
 
 		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos((180-IR_Angle[i])*PI/180);
-		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(2*PHI);
-			   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)*(1+tan(PHI)*tan(2*PHI));
+				SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI)/cos(PHI);
+		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI);
+
+		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)*(1+tan(PHI)*tan(2*PHI));
+		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)*(1+tan(PHI)*tan(2*PHI));
+		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii);
 
 		//			cout<<"Atheta= "<<Atheta<<endl;
 		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos((180-IR_Angle[i])*PI/180);
-		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(2*PHI);
+				SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(PHI)/cos(PHI);
+		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(PHI);
+
 		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(IR_Angle[i]*PI/180);
-				SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)*(1+tan(PHI)*tan(2*PHI));
+		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)*(1+tan(PHI)*tan(2*PHI));
+		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii);
 
 
 
@@ -655,6 +696,15 @@ void calEquationTwentySeven(const CXV3 *E, const double &k0,
 
 
 }
+void getAngleData(const int &PointOfAngle, const int *OneAngleNumberOfHit){
+	ofstream angledata("angledata.out");
+	for (int i = 0; i < PointOfAngle; i++) {
+		 angledata <<  OneAngleNumberOfHit[i] <<endl;
+
+		ifstream ifile("angledata.out");
+	}
+	angledata.close();
+}
 
 void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta, double *RCSPhi){
 
@@ -664,7 +714,6 @@ void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta
 		for (int i = 0; i < PointOfAngle; i++) {
 			file << RCSTheta[i] <<endl;
 	//		file << RCSPhi[i] << endl;
-
 			ifstream ifile("ThetapolRcsTheta.out");
 		}
 		file.close();
@@ -741,9 +790,9 @@ void genrateAperture(const double&THETA, const double &PHI, const double &distan
 	ant_N = normalize(ant_N);
 	ant_Nd = distance * ant_N;
 
-//	for (int i = 0; i < rnum; i++) {
-//		antr[i] = antr[i] - ant_Nd;
-//	}
+	for (int i = 0; i < rnum; i++) {
+		antr[i] = antr[i] - ant_Nd;
+	}
 
 	for (int i = 0; i < tnum; i++) {
 
@@ -776,21 +825,60 @@ void initializeEF(const string &POL, const Vector3 &kin, Vector3 &theta_h, Vecto
 
 }
 
-void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, Vector3 *k_tube,
+void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const Vector3 *k_tube, Vector3 *k_antr,
+		RayIndex *index,const int xdnum,
 		const Vector3 *tube, const Vector3 *refpoint_tube, const double *kdr_tube,
 		const double f, const Vector3 *E_tube,
 		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
 		CXV3 *Ec_tube, double *IR_Angle){
 
+	int a, b;
+//	for (int i = 0; i < tnum; i++) {
+//		a = i / (xdnum - 1);
+//		b = i % (xdnum - 1);
+//
+//		index->ray_center = i;
+//		(*index).ray_one = xdnum * a + b;
+//		(*index).ray_two = (*index).ray_one + 1;
+//		(*index).ray_three = (*index).ray_two + xdnum;
+//		(*index).ray_four = (*index).ray_one + xdnum;
+//
+//	}
 	for (int n = 0; n < tnum; n++) {
+		a = n / (xdnum - 1);
+		b = n % (xdnum - 1);
+
+		index->ray_center = n;
+		(*index).ray_one = xdnum * a + b;
+		(*index).ray_two = (*index).ray_one + 1;
+		(*index).ray_three = (*index).ray_two + xdnum;
+		(*index).ray_four = (*index).ray_one + xdnum;
+
+
 		if(hitnum_tube[n]!=0){
 			IR_Angle[n] = Vector_Angle_d(kt_in[0], k_tube[n]);
 //				cout<<IR_Angle[n]<<endl;
+
 		}else{
 			IR_Angle[n] = -1;
 		}
 
-		if (IR_Angle[n] > 45) {
+//
+//		if (IR_Angle[n] > 45 && k_tube[index->ray_center].x==k_antr[index->ray_four].x &&
+//				k_tube[index->ray_center].y==k_antr[index->ray_four].y &&
+//				k_tube[index->ray_center].z==k_antr[index->ray_four].z &&
+//				 k_tube[index->ray_center].x==k_antr[index->ray_one].x &&
+//				 k_tube[index->ray_center].y==k_antr[index->ray_one].y &&
+//				 k_tube[index->ray_center].z==k_antr[index->ray_one].z &&
+//				 k_tube[index->ray_center].x==k_antr[index->ray_three].x &&
+//				 k_tube[index->ray_center].y==k_antr[index->ray_three].y &&
+//				 k_tube[index->ray_center].z==k_antr[index->ray_three].z &&
+//				 k_tube[index->ray_center].x==k_antr[index->ray_two].x &&
+//				 k_tube[index->ray_center].y==k_antr[index->ray_two].y &&
+//				 k_tube[index->ray_center].z==k_antr[index->ray_two].z
+//
+//		)
+		if (IR_Angle[n] > 45 ){
 			intersectPlane((-1 * kt_in[0]), tube[0],
 					refpoint_tube[n], (-1 * kt_in[0]), kdr_tuber[n]);
 //			intersectPlane((-1 * kt_in[0]), tube[0],
@@ -799,7 +887,7 @@ void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, Vector3
 
 			retpoint_tube[n] = refpoint_tube[n] + kdr_tuber[n] * k_tube[n];
 //			total_path_tube[n] = kdr_tuber[n] + kdr_tube[n];
-			total_path_tube[n] = 2*kdr_tuber[n];
+			total_path_tube[n] = 2*kdr_tube[n];
 
 //							cout << total_path_tube[n] << "totalpath" << endl;
 
@@ -820,4 +908,41 @@ void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, Vector3
 //
 //	}
 }
+
+//void Raytube_Numbering(const int &tnum, const int &xdnum, const Vector3 *antr, const Vector3 *antt, RayIndex *index) {
+//
+////	RayIndex *index;
+////	index = new RayIndex[tnum];
+//
+//	int m, n;
+//	for (int i = 0; i < tnum; i++) {
+//		m = i / (xdnum - 1);
+//		n = i % (xdnum - 1);
+//
+//		index->ray_center = i;
+//		(*index).ray_one = xdnum * m + n;
+//		(*index).ray_two = (*index).ray_one + 1;
+//		(*index).ray_three = (*index).ray_two + xdnum;
+//		(*index).ray_four = (*index).ray_one + xdnum;
+//
+////
+////    cout << index->ray_center<<","\
+////         << (*index).ray_one << ","\
+////         << (*index).ray_two << ","\
+////         << (*index).ray_three << ","\
+////         << (*index).ray_four << endl;
+////
+////
+////
+////  cout << antt[index->ray_center].x << ", " << antt[index->ray_center].y << "," << antt[index->ray_center].z  << "tube" << endl;
+////  cout << antr[(*index).ray_one].x << ", " << antr[(*index).ray_one].y << "," << antr[(*index).ray_one].z  << "antr_one" << endl;
+////  cout << antr[(*index).ray_two].x << ", " << antr[(*index).ray_two].y << "," << antr[(*index).ray_two].z  << "antr_two" << endl;
+////  cout << antr[(*index).ray_three].x << ", " << antr[(*index).ray_three].y << "," << antr[(*index).ray_three].z  << "antr_three" << endl;
+////  cout << antr[(*index).ray_four].x << ", " << antr[(*index).ray_four].y << "," << antr[(*index).ray_four].z  << "antr_four" << endl;
+//
+//	}
+//}
+
+
+
 
