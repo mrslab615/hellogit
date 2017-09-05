@@ -37,7 +37,7 @@ using namespace std;
 const double PI = 3.14159265358979323846;
 const double c = 299792458;
 const CXF j = CXF(0, 1);
-const int maxhitnumber = 3;
+const int maxhitnumber = 1;
 
 class RayIndex {
 public:
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
 
 	double Lx = 0.2;
 	double Ly = 0.2;
-	double rayPerWavelenth = 64;
+	double rayPerWavelenth = 16;
 	double cellSize = lambda/rayPerWavelenth;
 	double Pmin = -45;
 	double Pmax = 45;
@@ -137,6 +137,8 @@ int main(int argc, char *argv[]) {
 	Vector3* k_tube = new Vector3[tnum];
 	Vector3* E_antr = new Vector3[rnum];
 	Vector3* E_tube = new Vector3[tnum];
+	Vector3* E_ii = new Vector3[tnum];
+
 	Vector3* kt_in = new Vector3[tnum];
 
 	int *hitnum_antr = new int[rnum];
@@ -241,6 +243,9 @@ int main(int argc, char *argv[]) {
 
 
 		initializeEF(POL, kt_in[0], theta_h, phi_h, Ei);
+		for(int n=0;n<tnum;n++){
+			E_ii[n]=Ei;
+		}
 
 
 
@@ -256,9 +261,14 @@ int main(int argc, char *argv[]) {
 
 		 AllEF(tnum, hitnum_tube, kt_in, k_tube, k_antr, index, xdnum,
 				tube, refpoint_tube, kdr_tube,
-				f, E_tube,
+				f, E_ii,
 				kdr_tuber, retpoint_tube, total_path_tube,
 				Ec_tube, IR_Angle);
+//		 AllEF(tnum, hitnum_tube, kt_in, k_tube, k_antr, index, xdnum,
+//				tube, refpoint_tube, kdr_tube,
+//				f, E_tube,
+//				kdr_tuber, retpoint_tube, total_path_tube,
+//				Ec_tube, IR_Angle);
 
 //			for (int n = 0; n<tnum ; n++){
 //				intersectPlane((-1 * kt_in[0]), tube[0], refpoint_tube[n],  k_tube[n], kdr_tuber[n]);
@@ -327,6 +337,7 @@ int main(int argc, char *argv[]) {
 	delete[] RCSPhi;
 	delete[] IR_Angle;
 	delete[] OneAngleNumberOfHit;
+	delete[] E_ii;
 
 	cout << (double)clock() / CLOCKS_PER_SEC << " S";
 	return 0;
@@ -650,6 +661,7 @@ void calEquationTwentySeven(const CXV3 *E, const double &k0,
 		//	cout<<"Ex ="<<Ex<<endl;
 		//	}
 			Ey = E[i] * theta_h;
+
 		//	if ( Ey!=CXF(0,0)){
 		// 	cout<<"Ey ="<<Ey<<endl;
 		//	}
@@ -664,21 +676,21 @@ void calEquationTwentySeven(const CXV3 *E, const double &k0,
 			} else {
 
 		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos((180-IR_Angle[i])*PI/180);
-				SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI)/cos(PHI);
+		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI)/cos(PHI);
 		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI);
 
 		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)*(1+tan(PHI)*tan(2*PHI));
 		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)*(1+tan(PHI)*tan(2*PHI));
-		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii);
+			   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii);
 
 		//			cout<<"Atheta= "<<Atheta<<endl;
 		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos((180-IR_Angle[i])*PI/180);
-				SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(PHI)/cos(PHI);
+		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(PHI)/cos(PHI);
 		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(PHI);
 
 		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)/cos(IR_Angle[i]*PI/180);
 		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii)*(1+tan(PHI)*tan(2*PHI));
-		//		SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii);
+				SingleRayAphi[i] = j*k0/(2*PI)*(Ex ) * expvalue * cellSize * cellSize * (Ii);
 
 
 
@@ -878,7 +890,7 @@ void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const V
 //				 k_tube[index->ray_center].z==k_antr[index->ray_two].z
 //
 //		)
-		if (IR_Angle[n] > 45 ){
+		if (IR_Angle[n] > 0 ){
 			intersectPlane((-1 * kt_in[0]), tube[0],
 					refpoint_tube[n], (-1 * kt_in[0]), kdr_tuber[n]);
 //			intersectPlane((-1 * kt_in[0]), tube[0],
