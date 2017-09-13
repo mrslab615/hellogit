@@ -29,15 +29,10 @@ using std::vector;
 
 using namespace std;
 
-//#define Nx 0.9
-//#define Ny 0.9
-//const float dx = 0.02 / 1;
-//const float dy = 0.02 / 1;
-//const double PI = 3.14159265358979323846;
 const double PI = 3.14159265358979323846;
 const double c = 299792458;
 const CXF j = CXF(0, 1);
-const int maxhitnumber = 1;
+const int maxhitnumber = 3;
 
 class RayIndex {
 public:
@@ -49,12 +44,6 @@ public:
 
 };
 
-
-//
-//static const int xdnum = Nx / dx;
-//static const int ydnum = Ny / dy;
-//int rnum = xdnum * ydnum;
-//int tnum = (xdnum - 1) * (ydnum - 1);
 
 //int GeoOpt(const Vector3 &raypoint, const BVH &bvh, Vector3 &hitpoint,
 //		Vector3 &k, Vector3 &E, float &t);
@@ -80,10 +69,10 @@ void calEquationTwentySeven(const CXV3 *E, const double &k0,
 
 void AllrayGeoOpt(const int &tnum, const Vector3 *tube, const BVH &bvh, const Vector3 &kin,
 		const Vector3 &Ein, Vector3 *refpoint_tube, Vector3 *k_tube, Vector3 *E_tube,
-		double *kdr_tube, int *hitnum_tube, int &OneAngleNumberOfHit);
+		double *kdr_tube, int *hitnum_tube, Vector3 *NormalCrossEpo2);
 
 int GeoOpt(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Vector3 &Ein,
-		Vector3 &hitpoint, Vector3 &kdir, Vector3 &Eout, double &t);
+		Vector3 &hitpoint, Vector3 &kdir, Vector3 &Eout, double &t, Vector3 &NormalCrossEpo);
 
 void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta, double *RCSPhi);
 
@@ -106,20 +95,21 @@ void Raytube_Numbering(const int &tnum, const int &xdnum, const Vector3 *antr, c
 
 void getAngleData(const int &PointOfAngle, const int *OneAngleNumberOfHit);
 
-//
+
+
 
 
 int main(int argc, char *argv[]) {
-	double f = 10e9;
+	double f = 15e9;
 	double lambda = c / f;
 
-	double Lx = 0.2;
-	double Ly = 0.2;
+	double Lx = 0.6;
+	double Ly = 0.6;
 	double rayPerWavelenth = 16;
 	double cellSize = lambda/rayPerWavelenth;
 	double Pmin = -45;
 	double Pmax = 45;
-	double Pstep = 0.1;
+	double Pstep = 0.5;
 	int PointOfAngle = (Pmax-Pmin)/Pstep + 1;
 
 	int xdnum = Lx / cellSize;
@@ -140,6 +130,7 @@ int main(int argc, char *argv[]) {
 	Vector3* E_ii = new Vector3[tnum];
 
 	Vector3* kt_in = new Vector3[tnum];
+	Vector3* Epo2 = new Vector3[tnum];
 
 	int *hitnum_antr = new int[rnum];
 	int *hitnum_tube = new int[tnum];
@@ -177,10 +168,10 @@ int main(int argc, char *argv[]) {
 
 //	string input = "/home/user/cuda-workspace/lib3/dihedral m.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/dihedral 22pt5d.3ds";
-//	string input = "/home/user/cuda-workspace/lib3/dihedral 45d.3ds";
+	string input = "/home/user/cuda-workspace/lib3/dihedral 45d.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/Untitled800.3ds";
-	string input = "/home/user/cuda-workspace/lib3/plate1515.3ds";
-
+//	string input = "/home/user/cuda-workspace/lib3/plate1515.3ds";
+//
 
 
 	Lib3dsFile* fin = lib3ds_file_load(input.c_str());
@@ -233,9 +224,11 @@ int main(int argc, char *argv[]) {
 	Vector3 theta_h;
 	Vector3 Ei;
 
+//	beep();
+
 
 	for (int i =0  ; i < PointOfAngle; i++) {
-		PHI = (-i*Pstep + Pmax) * PI / 180;
+		PHI = (i*Pstep + Pmin) * PI / 180;
 		genrateAperture(THETA, PHI, distance, cellSize, rnum, tnum, Lx,
 				Ly, xdnum, ydnum, antr, tube, kt_in[0]);
 
@@ -243,14 +236,20 @@ int main(int argc, char *argv[]) {
 
 
 		initializeEF(POL, kt_in[0], theta_h, phi_h, Ei);
-		for(int n=0;n<tnum;n++){
-			E_ii[n]=Ei;
-		}
 
 
 
 		AllrayGeoOpt(tnum, tube ,bvh, kt_in[0], Ei, refpoint_tube,  k_tube,  E_tube, kdr_tube,
-				hitnum_tube, OneAngleNumberOfHit[i]);
+				hitnum_tube, Epo2);
+//		double AnglekinandEpo;
+//		for(int n=0;n<tnum;n++){
+//				E_ii[n]=Ei;
+//				AnglekinandEpo=acos(Epo2[n]*(-1*kt_in[0]));
+//
+//				Epo2[n]=Epo2[n]^(-1*kt_in[0])/sin(AnglekinandEpo);
+//			}
+//
+
 
 
 //		AllrayGeoOpt(rnum, antr ,bvh, kt_in[0], Ei, refpoint_antr,  k_antr,  E_antr, kdr_antr,
@@ -259,14 +258,21 @@ int main(int argc, char *argv[]) {
 
 
 
+//
 		 AllEF(tnum, hitnum_tube, kt_in, k_tube, k_antr, index, xdnum,
 				tube, refpoint_tube, kdr_tube,
-				f, E_ii,
+				f, Epo2,
 				kdr_tuber, retpoint_tube, total_path_tube,
 				Ec_tube, IR_Angle);
+//
 //		 AllEF(tnum, hitnum_tube, kt_in, k_tube, k_antr, index, xdnum,
 //				tube, refpoint_tube, kdr_tube,
 //				f, E_tube,
+//				kdr_tuber, retpoint_tube, total_path_tube,
+//				Ec_tube, IR_Angle);
+//		 AllEF(tnum, hitnum_tube, kt_in, k_tube, k_antr, index, xdnum,
+//				tube, refpoint_tube, kdr_tube,
+//				f, E_ii,
 //				kdr_tuber, retpoint_tube, total_path_tube,
 //				Ec_tube, IR_Angle);
 
@@ -285,22 +291,24 @@ int main(int argc, char *argv[]) {
 				phi_h, PHI, IR_Angle, retpoint_antr, Atheta_total[0], Aphi_total[0]);
 
 
+
 		RCSTheta[i] = 10* log10(PI * 4 * abs(Atheta_total[0]) * abs(Atheta_total[0]));
 		RCSPhi[i]= 10 * log10(PI * 4 * abs(Aphi_total[0]) * abs(Aphi_total[0]));
-
-		cout << "RCS(phi) ="
+//
+		cout << "RCS(theta) ="
 				<< RCSTheta[i]
 				<< " dBsm" << endl;
-		cout << "RCS(theta) ="<<
+		cout << "RCS(phi) ="<<
 				RCSPhi[i]<< " dBsm"
 				<< endl;
 
 
 	}
-	getAngleData(PointOfAngle, OneAngleNumberOfHit);
+//	getAngleData(PointOfAngle, OneAngleNumberOfHit);
 
 	getMatlabData(POL, PointOfAngle, RCSTheta, RCSPhi);
 
+	cout<<PHI<<endl;
 
 
 
@@ -338,6 +346,8 @@ int main(int argc, char *argv[]) {
 	delete[] IR_Angle;
 	delete[] OneAngleNumberOfHit;
 	delete[] E_ii;
+	delete[] Epo2;
+
 
 	cout << (double)clock() / CLOCKS_PER_SEC << " S";
 	return 0;
@@ -346,16 +356,15 @@ int main(int argc, char *argv[]) {
 
 
 int GeoOpt(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Vector3 &Ein,
-		Vector3 &hitpoint, Vector3 &kdir, Vector3 &Eout, double &t) {
+		Vector3 &hitpoint, Vector3 &kdir, Vector3 &Eout, double &t, Vector3 &NormalCrossEpo2) {
 
 	Vector3 phi_h, theta_h, Ei, Xc, Yc, Zc, theta_ci_h, phi_ci_h, theta_cr_h,
-			phi_cr_h, Nz, Ed, m_h, Er;
-	double theta_ci;
+			phi_cr_h, Nz, Ed, m_h, Er, nor, kipo;
+	double theta_ci, AngleEpoandN,AnglekiPOandEd;
 //	float phi_ci;
 	int hitnumber = 0;
 	Ei = Ein;
-	t = 0;
-
+    t=0;
 	Ray ray(raypoint, kin);
 	IntersectionInfo I;
 
@@ -364,10 +373,10 @@ int GeoOpt(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Ve
 
 	while (hit) {
 		hitnumber = hitnumber + 1;
-
+//		cout<<hitnumber<<endl;
 //		cout << "hitpoint = " << I.hit.x << "," << I.hit.y << "," << I.hit.z<< endl;
 //                   cout<<I.t<<"I.t"<<endl;
-		Vector3 nor = I.object->getNormal(I);
+		nor = I.object->getNormal(I);
 //                 cout<<nor.x<<","<<nor.y<<","<<nor.z<<"nor"<<endl;
 
 		//R1 formula (11)
@@ -375,7 +384,7 @@ int GeoOpt(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Ve
 //		phi_ci = 0;
 //		cout<<"theta_ci = "<<theta_ci<<endl;
 
-		if (theta_ci > 1e-15) {
+		if (theta_ci > 1e-7) {
 			//R1 formula (6)
 			m_h = (-1 * ray.d) ^ nor / sin(theta_ci);
 			//		               cout<<m_h.x<<","<<m_h.y<<","<<m_h.z<<"m"<<endl;
@@ -394,19 +403,18 @@ int GeoOpt(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Ve
 
 			// get a reflection vector
 			//using https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
+			kipo = ray.d;
 			kdir = ray.d - 2 * (ray.d * nor) * nor;
-			//    cout<<r.x<<","<<r.y<<","<<r.z<<"=k "<<endl;
-
-			ray = Ray(I.hit, kdir);
 
 			//R1 formula (8) and (9)
 			if (hitnumber == 1) {
-
-				Ed = (Ei * phi_ci_h) * phi_ci_h
-						+ (Ei * theta_ci_h) * theta_ci_h;
+//				Ed = (Ei * phi_ci_h) * phi_ci_h
+//						+ (Ei * theta_ci_h) * theta_ci_h;
+				Ed = Ei;
 				Er = (-1) * (Ei * phi_ci_h) * phi_cr_h
 						+ (-1) * (Ei * theta_ci_h) * theta_cr_h;
 			} else {
+
 				Ed = Er;
 				Er = (-1) * (Ed * phi_ci_h) * phi_cr_h
 						+ (-1) * (Ed * theta_ci_h) * theta_cr_h;
@@ -414,33 +422,98 @@ int GeoOpt(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Ve
 			}
 
 		} else {
+			kipo = ray.d;
 			kdir = (-1) * ray.d;
-			if (hitnumber % 2 == 1) {
-				Er = (-1) * Ei;
-			} else {
-				Er = Ei;
+			if (hitnumber == 1) {
+
+				Ed = Ei;
+				Er =(-1)* Ed;
+			} else{
+				Ed = Er;
+				Er = (-1)*Ed;
 			}
-			ray = Ray(I.hit, kdir);
 		}
+		t += I.t;
+//		cout<<"Einput = "<<Ein.x<<","<<Ein.y<<","<<Ein.z<<endl;
+//		cout<<"kinput = "<<kin.x<<","<<kin.y<<","<<kin.z<<endl;
+//		cout<<"kouput = "<<kdir.x<<","<<kdir.y<<","<<kdir.z<<endl;
+//		cout<<"ki = "<<kipo.x<<","<<kipo.y<<","<<kipo.z<<endl;
+//		cout<<"n = "<<nor.x<<","<<nor.y<<","<<nor.z<<endl;
+//
+//		cout<<"Eipo = "<<Ed.x<<","<<Ed.y<<","<<Ed.z<<endl;
+//		cout<<"Er = "<<Er.x<<","<<Er.y<<","<<Er.z<<endl;
+
+
+		ray = Ray(I.hit, kdir);
+		hit = bvh.getIntersection(ray, &I, false);
+		if ((!hit) || (hitnumber == maxhitnumber)) {
+			break;
+
+		}
+
+	}
+
+		AngleEpoandN=acos(nor*Ed);
+	//	NormalCrossEpo2 = nor^Ed/(sin(AngleEpoandN));
+
+    //   NormalCrossEpo2 = nor^Ed;
+//        NormalCrossEpo2 = nor^(kin^Ed)/(-1*kin*nor);
+
+ //       NormalCrossEpo2 = nor^(kipo^Ed)/(-1*kipo*nor);
+//		AngleEpoandN=acos(kipo*Ed);
+		if (hitnumber!=0){
+//       NormalCrossEpo2 = nor^((kipo^Ed)^nor);
+         NormalCrossEpo2 = nor^(kipo^Ed);
+//        double  NormalCros1;
+//        NormalCros1 = (((kipo^Ed)^nor)*nor);
+
+
+//        NormalCrossEpo2 = kin^(nor^Er);
+//        NormalCrossEpo2 = normalize(NormalCrossEpo2);
+
+
+//
+//		cout<<"nx(kixEi) = "<<NormalCrossEpo2.x<<","<<NormalCrossEpo2.y<<","<<NormalCrossEpo2.z<<endl;
+//		cout<<"NICE 1 = "<<NormalCros1<<endl;
+//
+//
+
+		}
+//        cout<<"Er"<<Er.x<<","<<Er.y<<","<<Er.z<<endl;
+//        cout<<"epo"<<NormalCrossEpo2.x<<","<<NormalCrossEpo2.y<<","<<NormalCrossEpo2.z<<endl;
+
+    //    NormalCrossEpo2 = nor^(kin^Ed);
+    //    NormalCrossEpo2 = normalize(NormalCrossEpo2) ;
+
+
+
+//	    AnglekdrandPo=acos(kdir*Ed);
+//	    NormalCrossEpo2 = kdir^Ed/sin(AnglekdrandPo);
+//        AngleEpoandN=acos(nor*NormalCrossEpo2);
+//        NormalCrossEpo2=nor^NormalCrossEpo2/sin(AngleEpoandN);
+
+
+
+//		cout<<sin(AngleEpoandN)<<endl;
 
 		Eout = Er;
 		hitpoint = I.hit;
-		t += I.t;
+
+//		cout<<I.t<<endl;
+//		cout<<t<<endl;
 //		cout<<Ei.x<<","<<Ei.y<<","<<Ei.z<<" = ei"<<endl;
 //		cout << "hitpoint = " << hitpoint.x << "," << hitpoint.y << ","
 //				<< hitpoint.z << endl;
 
 //		    cout<<Ed.x<<","<<Ed.y<<","<<Ed.z<<"ed"<<endl;
 //		cout << Er.x << "," << Er.y << "," << Er.z << " =er " << endl;
+//		cout << NormalCrossEpo2.x << "," << NormalCrossEpo2.y << "," << NormalCrossEpo2.z << " =enor " << endl;
+
+
 //		cout << hitnumber << "hitnumber" << endl;
 
-		bool hit = bvh.getIntersection(ray, &I, false);
 
-		if ((!hit) || (hitnumber == maxhitnumber)) {
-			break;
-		}
 
-	}
 	return hitnumber;
 }
 //Ray-Plane Intersection
@@ -584,14 +657,14 @@ void rotate_THETA_then_PHI(Vector3 *R1, int n, double THETA, double PHI) {
 
 void AllrayGeoOpt(const int &tnum, const Vector3 *tube, const BVH &bvh, const Vector3 &kin,
 		const Vector3 &Ein, Vector3 *refpoint_tube, Vector3 *k_tube, Vector3 *E_tube,
-		double *kdr_tube, int *hitnum_tube, int &OneAngleNumberOfHit){
+		double *kdr_tube, int *hitnum_tube, Vector3 *NormalCrossEpo2){
 	for (int n = 0; n < tnum; n++) {
 //			k_tube[n] =
 //			E_tube[n] = Ei;
 		//		cout<<n<<endl;
 		hitnum_tube[n] = GeoOpt(tube[n], bvh,  kin, Ein, refpoint_tube[n], k_tube[n],
-				E_tube[n], kdr_tube[n]);
-		OneAngleNumberOfHit+=hitnum_tube[n];
+				E_tube[n], kdr_tube[n], NormalCrossEpo2[n]);
+
 
 	}
 
@@ -657,15 +730,14 @@ void calEquationTwentySeven(const CXV3 *E, const double &k0,
 	for(int i = 0 ; i < tnum ; i++){
 
 			Ex = E[i] * phi_h;
-		//	if ( Ex!=CXF(0,0)){
-		//	cout<<"Ex ="<<Ex<<endl;
-		//	}
+//			if ( Ex!=CXF(0,0)){
+//			cout<<"Ex ="<<Ex<<endl;
+//			}
 			Ey = E[i] * theta_h;
 
-		//	if ( Ey!=CXF(0,0)){
-		// 	cout<<"Ey ="<<Ey<<endl;
-		//	}
-		//	cout<<"Ey ="<<Ey<<endl;
+//			if ( Ey!=CXF(0,0)){
+//		 	cout<<"Ey ="<<Ey<<endl;
+//			}
 
 		//	float Phi_p; //Phi for paper
 
@@ -677,9 +749,8 @@ void calEquationTwentySeven(const CXV3 *E, const double &k0,
 
 		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos((180-IR_Angle[i])*PI/180);
 		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI)/cos(PHI);
-		//		SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI);
+//				SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)/cos(PHI);
 
-		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)*(1+tan(PHI)*tan(2*PHI));
 		//	   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii)*(1+tan(PHI)*tan(2*PHI));
 			   SingleRayAtheta[i] = j*k0/(2*PI)*( Ey ) * expvalue * cellSize * cellSize* (Ii);
 
@@ -738,22 +809,22 @@ void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta
 		}
 		file1.close();
 		}else{
-			ofstream file("PhipolRcsTheta.out");
-			for (int i = 0; i < PointOfAngle; i++) {
-				file << RCSTheta[i] <<endl;
-		//		file << RCSPhi[i] << endl;
+		ofstream file("PhipolRcsTheta.out");
+		for (int i = 0; i < PointOfAngle; i++) {
+			file << RCSTheta[i] <<endl;
+	//		file << RCSPhi[i] << endl;
 
-				ifstream ifile("PhipolRcsTheta.out");
-			}
-			file.close();
+			ifstream ifile("PhipolRcsTheta.out");
+		}
+		file.close();
 
-			ofstream file1("PhipolRcsPhi.out");
-			for (int i = 0; i < PointOfAngle ; i++) {
-		//		file << RCSTheta[i] <<endl;
-				file1 << RCSPhi[i] << endl;
-				ifstream ifile1("PhipolRcsPhi.out");
-			}
-			file1.close();
+		ofstream file1("PhipolRcsPhi.out");
+		for (int i = 0; i < PointOfAngle ; i++) {
+	//		file << RCSTheta[i] <<endl;
+			file1 << RCSPhi[i] << endl;
+			ifstream ifile1("PhipolRcsPhi.out");
+		}
+		file1.close();
 		}
 }
 
@@ -834,7 +905,6 @@ void initializeEF(const string &POL, const Vector3 &kin, Vector3 &theta_h, Vecto
 		Ei = phi_h;   //h ->X'
 	}
 	//	 Ei = (Ei * theta_h) * theta_h + (Ei * phi_h) * phi_h;
-
 }
 
 void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const Vector3 *k_tube, Vector3 *k_antr,
@@ -844,27 +914,17 @@ void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const V
 		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
 		CXV3 *Ec_tube, double *IR_Angle){
 
-	int a, b;
-//	for (int i = 0; i < tnum; i++) {
-//		a = i / (xdnum - 1);
-//		b = i % (xdnum - 1);
+//	int a, b;
+
+	for (int n = 0; n < tnum; n++) {
+//		a = n / (xdnum - 1);
+//		b = n % (xdnum - 1);
 //
-//		index->ray_center = i;
+//		index->ray_center = n;
 //		(*index).ray_one = xdnum * a + b;
 //		(*index).ray_two = (*index).ray_one + 1;
 //		(*index).ray_three = (*index).ray_two + xdnum;
 //		(*index).ray_four = (*index).ray_one + xdnum;
-//
-//	}
-	for (int n = 0; n < tnum; n++) {
-		a = n / (xdnum - 1);
-		b = n % (xdnum - 1);
-
-		index->ray_center = n;
-		(*index).ray_one = xdnum * a + b;
-		(*index).ray_two = (*index).ray_one + 1;
-		(*index).ray_three = (*index).ray_two + xdnum;
-		(*index).ray_four = (*index).ray_one + xdnum;
 
 
 		if(hitnum_tube[n]!=0){
@@ -874,22 +934,6 @@ void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const V
 		}else{
 			IR_Angle[n] = -1;
 		}
-
-//
-//		if (IR_Angle[n] > 45 && k_tube[index->ray_center].x==k_antr[index->ray_four].x &&
-//				k_tube[index->ray_center].y==k_antr[index->ray_four].y &&
-//				k_tube[index->ray_center].z==k_antr[index->ray_four].z &&
-//				 k_tube[index->ray_center].x==k_antr[index->ray_one].x &&
-//				 k_tube[index->ray_center].y==k_antr[index->ray_one].y &&
-//				 k_tube[index->ray_center].z==k_antr[index->ray_one].z &&
-//				 k_tube[index->ray_center].x==k_antr[index->ray_three].x &&
-//				 k_tube[index->ray_center].y==k_antr[index->ray_three].y &&
-//				 k_tube[index->ray_center].z==k_antr[index->ray_three].z &&
-//				 k_tube[index->ray_center].x==k_antr[index->ray_two].x &&
-//				 k_tube[index->ray_center].y==k_antr[index->ray_two].y &&
-//				 k_tube[index->ray_center].z==k_antr[index->ray_two].z
-//
-//		)
 		if (IR_Angle[n] > 0 ){
 			intersectPlane((-1 * kt_in[0]), tube[0],
 					refpoint_tube[n], (-1 * kt_in[0]), kdr_tuber[n]);
@@ -898,10 +942,12 @@ void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const V
 
 
 			retpoint_tube[n] = refpoint_tube[n] + kdr_tuber[n] * k_tube[n];
-//			total_path_tube[n] = kdr_tuber[n] + kdr_tube[n];
-			total_path_tube[n] = 2*kdr_tube[n];
+			total_path_tube[n] = kdr_tuber[n] + kdr_tube[n];
+//			total_path_tube[n] = 2*kdr_tube[n];
+//			cout<<kdr_tube[n]<<"kdr_tube"<<endl;
+//			cout<< kdr_tuber[n]<<"kdr_tbr"<<endl;
 
-//							cout << total_path_tube[n] << "totalpath" << endl;
+//							cout << total_path_tube[n] << " totalpath" << endl;
 
 			ComplexField(E_tube[n], total_path_tube[n], f, Ec_tube[n]);
 		} else {
