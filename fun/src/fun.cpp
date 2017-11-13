@@ -35,25 +35,6 @@ const double PI = 3.14159265358979323846;
 const double c = 299792458;
 const CXF j = CXF(0, 1);
 
-//class RayIndex {
-//public:
-//	int ray_one;
-//	int ray_two;
-//	int ray_three;
-//	int ray_four;
-//	int ray_center;
-//};
-//struct Plane{
-//    Plane() {}
-//
-//    Plane(const Vector3 & p, const Vector3 & n)
-//        : p(p) // point
-//        , n(n) //normal
-//    {}
-//
-//    Vector3 p;
-//    Vector3 n;
-//};
 
 string IntToStr(int n);
 
@@ -73,24 +54,6 @@ void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta
 
 void initializeEF(const string &POL, const Vector3 &kin, Vector3 &theta_h, Vector3 &phi_h,
 		Vector3 &Ei);
-
-
-void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const Vector3 *k_tube,
-		const Vector3 &tube0, const Vector3 *refpoint_tube, const double *kdr_tube,
-		const double f, const Vector3 *E_tube,
-		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
-		CXV3 *Ec_tube, double *IR_Angle);
-
-
-void PO1CEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in,
-		const Vector3 *k_tube,
-		const Vector3 *tube, const Vector3 *refpoint_tube, const double *kdr_tube,
-		const double f, const Vector3 *E_tube,
-		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
-		CXV3 *Ec_tube, double *IR_Angle);
-
-
-
 
 
 int GeometricalOptics(const Vector3 &raypoint, const BVH &bvh, const Vector3 &kin, const Vector3 &Ei,
@@ -114,8 +77,7 @@ void getCSTformatData(const double *Theta, const double *Phi, const double *ReE_
 void calEq24( Vector3 **EpoA,  double **kdotr,  Vector3 **RefPoint,
 		const Vector3 &kin, const int *hitnum_tube, const int &MaximumNumberOfReflections,
 		const int &tnum, const Vector3 &tube0, const double &cellSize, const double &k0,
-		const Vector3 &theta_h, const Vector3 &phi_h, CXF *AthetaTotal,  CXF *AphiTotal,
-		double** RetDis, CXV3**EcPO, CXF **Ex, CXF** Ey, CXF **SingleRayAtheta, CXF **SingleRayAphi);
+		const Vector3 &theta_h, const Vector3 &phi_h, CXF *AthetaTotal,  CXF *AphiTotal);
 
 void getSourcePoint(const double &cellSize, const int &tnum, const int xdnum, Vector3 *antt){
 	Vector3 antc;
@@ -182,21 +144,6 @@ void rotateTHETAThenPHI(const Vector3 *R1, int n, double THETA, double PHI, Vect
 
 	delete [] R2;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -361,8 +308,6 @@ int main(int argc, char *argv[]) {
 //   ------------------------------input Angle file----------------------------------------
 
 
-
-
 		double fcell = 15e9;					//max sweep frequecny
 		double f ;
 
@@ -402,7 +347,7 @@ int main(int argc, char *argv[]) {
 			  EpoA[i] = new Vector3[mhpd];
 		  }
 
-		Vector3* kt_in = new Vector3[tnum];
+//		Vector3* kt_in = new Vector3[tnum];
 		Vector3* refpoint_tube = new Vector3[tnum]; //The source point on the object
 		Vector3** RefPoint = new Vector3*[tnum]; //The source point on the object
 		  for(int i = 0; i < tnum; ++i){
@@ -441,12 +386,8 @@ int main(int argc, char *argv[]) {
 		}
 
 		memset(hitnum_tube, 0, tnum);
-		memset(kt_in, 0, tnum);
 
-		double** RetDis = new double*[tnum]; //Return Distance
-		for(int i = 0; i < tnum; i++){
-			RetDis[i] = new double[mhpd];
-		}
+
 		CXF* Atheta_total = new CXF[mhpd+1];
 		CXF* Aphi_total = new CXF[mhpd+1];
 
@@ -454,17 +395,6 @@ int main(int argc, char *argv[]) {
 		for(int i = 0; i < tnum; i++){
 			EcPO[i] = new CXV3[mhpd];
 		 }
-		CXF** Ex = new CXF*[tnum];
-		CXF** Ey = new CXF*[tnum];
-		CXF** SingleRayAtheta  = new CXF*[tnum];
-		CXF** SingleRayAphi =new CXF*[tnum];
-		for(int i = 0 ; i<tnum ; i++){
-			Ex[i] = new CXF[mhpd];
-			Ey[i] = new CXF[mhpd];
-			SingleRayAtheta[i] = new CXF[mhpd];
-			SingleRayAphi[i] =  new CXF[mhpd];
-
-		}
 
 		START1=clock();
 
@@ -473,6 +403,8 @@ int main(int argc, char *argv[]) {
 		Vector3 phi_h;
 		Vector3 theta_h;
 		Vector3 Ei;
+		Vector3 ktin;
+
 
 		getSourcePoint(cellSize, tnum, xdnum, source);
 
@@ -490,32 +422,31 @@ int main(int argc, char *argv[]) {
 //			cout<<"PHI = "<<PHI[i]<<endl;
 			rotateTHETAThenPHI(source, tnum, THETA[i], PHI[i], tube) ;
 
-			movAntToFarField(tube, tnum, distance, tube, kt_in[0]);
+			movAntToFarField(tube, tnum, distance, tube, ktin);
 //			getAntPlane(THETA[i], PHI[i], distance,
 //					cellSize, tnum, xdnum, tube,
 //					  kt_in[0]);
 
 
 
-			initializeEF(POL, kt_in[0], theta_h, phi_h, Ei);
+			initializeEF(POL, ktin, theta_h, phi_h, Ei);
 
 
 
 	//		cout<< "THETA_"<<"("<<theta_h.x<<","<<theta_h.y<<","<<theta_h.z<<")"<<endl;
 	//		cout<< "PHI_"<<"("<<phi_h.x<<","<<phi_h.y<<","<<phi_h.z<<")"<<endl;
-			calAllGeoOpt(tnum, tube ,bvh, kt_in[0], Ei, mhpd,
+			calAllGeoOpt(tnum, tube ,bvh, ktin, Ei, mhpd,
 						  k_tube,  hitnum_tube, EpoA,
 						 kdotr, RefPoint);
 
 //			exit(0);
 			for(int ii = 0 ;ii < NumberOfFrequencyPoints; ii++){
 				f = (ii*Fstep + Fmin);
-				double k0 = 2 * PI * f * pow(c, -1);
+				double k0 = 2 * PI * f / c;
 				calEq24(EpoA, kdotr, RefPoint,
-						kt_in[0], hitnum_tube, mhpd,
+						ktin, hitnum_tube, mhpd,
 						tnum, tube[0], cellSize, k0,
-						theta_h, phi_h, Atheta_total,  Aphi_total,
-						 RetDis, EcPO, Ex, Ey, SingleRayAtheta,  SingleRayAphi);
+						theta_h, phi_h, Atheta_total,  Aphi_total);
 
 
 
@@ -547,27 +478,12 @@ int main(int argc, char *argv[]) {
 				RCSTheta[i] = 10* log10(PI * 4 * abs(Atheta_total[mhpd]) * abs(Atheta_total[mhpd]));
 				RCSPhi[i]= 10 * log10(PI * 4 * abs(Aphi_total[mhpd]) * abs(Aphi_total[mhpd]));
 
-
-
-
-	//			RCSABS[i] = 10 * log10(PI * 4 * abs(Aphi_total[3]) * abs(Aphi_total[3])+
-	//					PI * 4 * abs(Atheta_total[3]) * abs(Atheta_total[3]));
-	//			RCSABS[i] =Aphi_total[1];
-		//
 				cout << "RCS(theta) ="
 						<< RCSTheta[i]
 						<< " dBsm" << endl;
 				cout << "RCS(phi) ="<<
 						RCSPhi[i]<< " dBsm"
 						<< endl;
-
-	//			exit(0);
-
-//				getCSTformatData(THETA, PHI, ReE_Theta, ImE_Theta,
-//								ReE_Phi, ImE_Phi, PointOfAngle, NumberOfFrequencyPoints, ii);
-//				getCSTformatDataf(THETA, PHI, ReE_Theta, ImE_Theta,
-//								ReE_Phi, ImE_Phi, PointOfAngle, NumberOfFrequencyPoints, ii, f);
-
 
 
 
@@ -595,7 +511,6 @@ int main(int argc, char *argv[]) {
 
 //		getMatlabData(POL, PointOfAngle, RCSTheta, RCSPhi);
 		delete[] source;
-
 		delete[] tube;
 		delete[] k_tube;
 		delete[] hitnum_tube;
@@ -607,22 +522,13 @@ int main(int argc, char *argv[]) {
 		delete[] EpoA;
 
 		for(int i = 0; i < tnum; i++){
-			delete RetDis[i];
-			delete Ex[i];
-			delete Ey[i];
-			delete SingleRayAtheta[i];
-			delete SingleRayAphi[i];
+
 			delete EcPO[i];
 
 		}
 
-		delete[] RetDis;
 		delete[] EcPO;
 
-		delete []Ex;
-		delete []Ey;
-		delete []SingleRayAtheta;
-		delete []SingleRayAphi;
 
 
 		for(int i = 0; i<tnum ; ++i){
@@ -642,7 +548,6 @@ int main(int argc, char *argv[]) {
 
 //		delete[] Atheta;
 //		delete[] Aphi;
-		delete[] kt_in;
 		delete[] Atheta_total;
 		delete[] Aphi_total;
 		delete[] RCSTheta;
@@ -720,25 +625,14 @@ bool intersectPlane(const Vector3 &n, const Vector3 &p0, const Vector3 &l0,
 }
 void ComplexField(const Vector3 &R, const double &kr, const double k0, CXV3 &C) {
 //	CXF expvalue = exp(j * (kr) / c * frequency * multiply2 * PI);
+	double neg=-1;
 
-	CXF expvalue = exp(j * (kr) *k0);
+	CXF expvalue = exp(j * (kr)* neg *k0);
 	C = CXV3(CXF(R.x, 0) * expvalue, CXF(R.y, 0) * expvalue,
 			CXF(R.z, 0) * expvalue);
 }
 
-double Vector_Angle_d(const Vector3 &v1, const Vector3 &v2) {
-	double l1 = length(v1);
-	double l2 = length(v2);
-	double angle = 0;
-//	cout << v2.x << "," << v2.y << "," << v2.z << endl;
 
-
-	angle = SafeAcos(v1 * v2 / (l1 * l2));
-	angle = angle * 180 / PI;
-//	cout << angle << endl;
-
-	return angle;
-}
 
 double SafeAcos(double x) {
 	if (x < -1.0)
@@ -778,15 +672,6 @@ void rotate_THETA_then_PHI(Vector3 *R1, int n, double THETA, double PHI) {
 
 
 
-void getAngleData(const int &PointOfAngle, const CXF *OneAngleNumberOfHit){
-	ofstream angledata("angledata.out");
-	for (int i = 0; i < PointOfAngle; i++) {
-		 angledata <<  OneAngleNumberOfHit[i] <<endl;
-
-		ifstream ifile("angledata.out");
-	}
-	angledata.close();
-}
 
 void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta, double *RCSPhi){
 
@@ -844,83 +729,8 @@ void initializeEF(const string &POL, const Vector3 &kin, Vector3 &theta_h, Vecto
 	//	 Ei = (Ei * theta_h) * theta_h + (Ei * phi_h) * phi_h;
 }
 
-void AllEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in, const Vector3 *k_tube,
-		const Vector3 &tube0, const Vector3 *refpoint_tube, const double *kdr_tube,
-		const double f, const Vector3 *E_tube,
-		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
-		CXV3 *Ec_tube, double *IR_Angle){
 
 
-	for (int n = 0; n < tnum; n++) {
-
-		if(hitnum_tube[n]!=0){
-			IR_Angle[n] = Vector_Angle_d(kt_in[0], k_tube[n]);
-//				cout<<IR_Angle[n]<<endl;
-
-		}else{
-			IR_Angle[n] = -1;
-		}
-		if (IR_Angle[n] >= 0 ){
-			intersectPlane((-1 * kt_in[0]), tube0,
-					refpoint_tube[n], (-1 * kt_in[0]), kdr_tuber[n]);
-
-
-//			retpoint_tube[n] = refpoint_tube[n] + kdr_tuber[n] * k_tube[n];
-			total_path_tube[n] = kdr_tuber[n] + kdr_tube[n];
-//			total_path_tube[n] = 2*kdr_tube[n];
-//			cout<<kdr_tube[n]<<"kdr_tube"<<endl;
-//			cout<< kdr_tuber[n]<<"kdr_tbr"<<endl;
-
-//			cout << total_path_tube[n] << " totalpath" << endl;
-
-			ComplexField(E_tube[n], total_path_tube[n], f, Ec_tube[n]);
-		} else {
-			Ec_tube[n] = CXV3((CXF(0, 0)), CXF(0, 0), CXF(0, 0));
-		}
-		//		cout << "rethit = " << return_hit[n] << endl;
-	}
-
-}
-void PO1CEF(const int &tnum, const int *hitnum_tube,const Vector3 *kt_in,
-		const Vector3 *k_tube,
-		const Vector3 *tube, const Vector3 *refpoint_tube, const double *kdr_tube,
-		const double f, const Vector3 *E_tube,
-		double *kdr_tuber, Vector3 *retpoint_tube, double *total_path_tube,
-		CXV3 *Ec_tube, double *IR_Angle){
-
-//	int a, b;
-
-	for (int n = 0; n < tnum; n++) {
-
-		if(hitnum_tube[n]!=0){
-			IR_Angle[n] = Vector_Angle_d(kt_in[0], k_tube[n]);
-//				cout<<IR_Angle[n]<<endl;
-
-		}else{
-			IR_Angle[n] = -1;
-		}
-		if (IR_Angle[n] > 0 ){
-//			intersectPlane((-1 * kt_in[0]), tube[0],
-//					refpoint_tube[n], (-1 * kt_in[0]), kdr_tuber[n]);
-//			intersectPlane((-1 * kt_in[0]), tube[0],
-//					refpoint_tube[n], k_tube[n], kdr_tuber[n]);
-
-//			retpoint_tube[n] = refpoint_tube[n] + kdr_tuber[n] * k_tube[n];
-//			total_path_tube[n] = kdr_tuber[n] + kdr_tube[n];
-			total_path_tube[n] = 2*kdr_tube[n];
-//			cout<<kdr_tube[n]<<"kdr_tube"<<endl;
-//			cout<< kdr_tuber[n]<<"kdr_tbr"<<endl;
-
-//			cout << total_path_tube[n] << " totalpath" << endl;
-
-			ComplexField(E_tube[n], total_path_tube[n], f, Ec_tube[n]);
-		} else {
-			Ec_tube[n] = CXV3((CXF(0, 0)), CXF(0, 0), CXF(0, 0));
-		}
-		//		cout << "rethit = " << return_hit[n] << endl;
-	}
-
-}
 
 void getAntPlane(const double&THETA, const double &PHI, const double &distance,
 		const double &cellSize, const int &tnum, const int xdnum, Vector3 *antt,
@@ -1180,8 +990,11 @@ string IntToStr(int n)
 void calEq24( Vector3 **EpoA,  double **kdotr,  Vector3 **RefPoint,
 		const Vector3 &kin, const int *hitnum_tube, const int &MaximumNumberOfReflections,
 		const int &tnum, const Vector3 &tube0, const double &cellSize, const double &k0,
-		const Vector3 &theta_h, const Vector3 &phi_h, CXF *AthetaTotal,  CXF *AphiTotal,
-		double** RetDis, CXV3**EcPO, CXF **Ex, CXF** Ey, CXF **SingleRayAtheta, CXF **SingleRayAphi){
+		const Vector3 &theta_h, const Vector3 &phi_h, CXF *AthetaTotal,  CXF *AphiTotal){
+	double RetDis=0;
+	double TotalDis;
+	CXV3 EcPO;
+	CXF Ex,  Ey,  SingleRayAtheta,  SingleRayAphi;
 
 	for(int i = 0 ; i<MaximumNumberOfReflections ; i++){
 		AthetaTotal[i]=CXF(0,0);
@@ -1189,28 +1002,30 @@ void calEq24( Vector3 **EpoA,  double **kdotr,  Vector3 **RefPoint,
 		for(int n =0 ; n<tnum ; n++){
 			if(hitnum_tube[n]!=0 && hitnum_tube[n]>= i+1){
 				intersectPlane((-1 * kin), tube0,
-						RefPoint[n][i], (-1 * kin), RetDis[n][i]);
+						RefPoint[n][i], (-1 * kin), RetDis);
 
-				RetDis[n][i]= RetDis[n][i] + kdotr[n][i];
+				TotalDis= RetDis + kdotr[n][i];
 
-				ComplexField(EpoA[n][i], RetDis[n][i], k0, EcPO[n][i]);
+				ComplexField(EpoA[n][i], TotalDis, k0, EcPO);
 
 
 			}else{
-				EcPO[n][i]=CXV3((CXF(0, 0)), CXF(0, 0), CXF(0, 0));
+				EcPO=CXV3((CXF(0, 0)), CXF(0, 0), CXF(0, 0));
 
 			}
-			Ex[n][i] = EcPO[n][i] * phi_h;
-			Ey[n][i] = EcPO[n][i] * theta_h;
-			SingleRayAtheta[n][i] = j*k0/(2*PI)*( Ey[n][i] )  * cellSize * cellSize;
-			SingleRayAphi[n][i] = j*k0/(2*PI)*(Ex[n][i] )  * cellSize * cellSize;
-			AthetaTotal[i] += SingleRayAtheta[n][i];
+			Ex= EcPO * phi_h;
+			Ey= EcPO * theta_h;
+			SingleRayAtheta = j*k0/(2*PI)*( Ey )  * cellSize * cellSize;
+			SingleRayAphi= j*k0/(2*PI)*(Ex)  * cellSize * cellSize;
+			AthetaTotal[i] += SingleRayAtheta;
 
-			AphiTotal[i] += SingleRayAphi[n][i];
-
+			AphiTotal[i] += SingleRayAphi;
 
 		}
+
+
 	}
+
 
 }
 
