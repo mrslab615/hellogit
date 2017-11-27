@@ -41,12 +41,7 @@ string IntToStr(int n);
 bool intersectPlane(const Vector3 &n, const Vector3 &p0, const Vector3 &l0,
 		const Vector3 &l, double &t);
 void ComplexField(const Vector3 &R, const double &kr, const double frequency, CXV3 &C);
-double Vector_Angle_d(const Vector3 &v1, const Vector3 &v2);
 void rotate_THETA_then_PHI(Vector3* R1, int n, double THETA, double PHI);
-
-
-double SafeAcos(double x);
-
 
 
 void getMatlabData(const string &POL,  const int &PointOfAngle, double *RCSTheta, double *RCSPhi);
@@ -62,10 +57,8 @@ int GeometricalOptics(const Vector3 &raypoint, const BVH &bvh, const Vector3 &ki
 		 double *kdotr, Vector3 *RefPoint);
 
 void calAllGeoOpt(const int &tnum, const Vector3 *tube, const BVH &bvh, const Vector3 &kin,
-		const Vector3 &Ein,const int &MaximumNumberOfReflections,
-		  Vector3 *k_tube,
-		 int *hitnum_tube, Vector3 ** EpoA,
-		double **kdotr, Vector3 **RefPoint);
+		const Vector3 &Ein,const int &MaximumNumberOfReflections, Vector3 *k_tube,
+		int *hitnum_tube, Vector3 ** EpoA, double **kdotr, Vector3 **RefPoint);
 
 
 
@@ -82,7 +75,7 @@ void calEq24( Vector3 **EpoA,  double **kdotr,  Vector3 **RefPoint,
 void getSourcePoint(const double &cellSize, const int &tnum, const int xdnum, Vector3 *antt){
 	Vector3 antc;
 
-	for (int i = 0; i < tnum; i++) {
+	for (int i = 0; i < tnum; ++i) {
 		antt[i].x = 0 + (i % xdnum) * cellSize;
 		antt[i].y = 0 + i / xdnum * cellSize;
 		antt[i].z = 0;
@@ -97,7 +90,7 @@ void getSourcePoint(const double &cellSize, const int &tnum, const int xdnum, Ve
 
 
 
-	for (int i = 0; i < tnum; i++) {
+	for (int i = 0; i < tnum; ++i) {
 		antt[i] = antt[i] - antc;
 	}
 }
@@ -111,7 +104,7 @@ void movAntToFarField(const Vector3 *antt, const int &tnum,  double &distance, V
 	ant_Nd = distance * kin;
 
 
-	for (int i = 0; i < tnum; i++) {
+	for (int i = 0; i < tnum; ++i) {
 
 		tube[i] = antt[i] - ant_Nd;
 	}
@@ -179,26 +172,23 @@ void getCSTformatDataf(const double *Theta, const double *Phi,  double **ReE_The
 		}
 
 }
+void SumPO(const int &mhpd, CXF *Atheta_total, CXF *Aphi_total);
 
-
-
-
-
-
+void intersectPlane1(const Vector3 &n, const Vector3 &p0, const Vector3 &l0,
+		 double &t);
 
 
 
 
 
 int main(int argc, char *argv[]) {
-	double START1, END1;
 
 
 //-------------------------------input .3ds model---------------------------------
 //	string input = "/home/user/cuda-workspace/lib3/Ball.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/plate1515.3ds";
-//	string input = "/home/user/cuda-workspace/lib3/dihedral 45d.3ds";
-	string input = "/home/user/cuda-workspace/lib3/dihedral m.3ds";
+	string input = "/home/user/cuda-workspace/lib3/dihedral 45d.3ds";
+//	string input = "/home/user/cuda-workspace/lib3/dihedral m.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/dihedral 22pt5d.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/trihedral30.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/threeinone.3ds";
@@ -227,7 +217,7 @@ int main(int argc, char *argv[]) {
 
 	vector<Object*> objects;
 
-	for (size_t i = 0; i < num_face; i++) {
+	for (size_t i = 0; i < num_face; ++i) {
 		objects.push_back(
 				new Triangle(
 						Vector3(vert[face[i].points[0]].pos[0],
@@ -318,7 +308,6 @@ int main(int argc, char *argv[]) {
 		double lambdac = c / fcell;
 //		cout<<"L="<<lambda<<endl;
 //		exit(0);
-
 		double Lx = 0.6;
 		double Ly = 0.6;
 		double rayPerWavelenth = 16;
@@ -343,35 +332,21 @@ int main(int argc, char *argv[]) {
 		Vector3* tube = new Vector3[tnum]; //raytube
 		Vector3* k_tube = new Vector3[tnum];
 		Vector3** EpoA = new Vector3*[tnum];
-		  for(int i = 0; i < tnum; ++i){
-			  EpoA[i] = new Vector3[mhpd];
+		Vector3** RefPoint = new Vector3*[tnum]; //The source point on the object
+		double** kdotr = new double*[tnum];  //Point of emission to the point of reflection distance
+		for(int i = 0; i < tnum; ++i){
+			EpoA[i] = new Vector3[mhpd];
+			RefPoint[i] = new Vector3[mhpd];
+			kdotr[i] = new double[mhpd];
 		  }
 
-//		Vector3* kt_in = new Vector3[tnum];
-		Vector3* refpoint_tube = new Vector3[tnum]; //The source point on the object
-		Vector3** RefPoint = new Vector3*[tnum]; //The source point on the object
-		  for(int i = 0; i < tnum; ++i){
-			  RefPoint[i] = new Vector3[mhpd];
-		  }
 
 		int *hitnum_tube = new int[tnum];
-
-		double** kdotr = new double*[tnum];  //Point of emission to the point of reflection distance
-		  for(int i = 0; i < tnum; ++i){
-			  kdotr[i] = new double[mhpd];
-		  }
-
-
-
-//		Vector3* retpoint_tube = new Vector3[tnum]; //The Return point on incident plane
-
-
 		double* RCSTheta = new double[PointOfAngle];
 		double* RCSPhi =new double[PointOfAngle];
 
 		double* PHI = new  double[PointOfAngle];
 		double* THETA = new double[PointOfAngle];
-
 		double** ReE_Theta = new double*[PointOfAngle];
 		double** ImE_Theta = new double*[PointOfAngle];
 		double** ReE_Phi = new double*[PointOfAngle];
@@ -385,18 +360,14 @@ int main(int argc, char *argv[]) {
 
 		}
 
-		memset(hitnum_tube, 0, tnum);
-
-
 		CXF* Atheta_total = new CXF[mhpd+1];
 		CXF* Aphi_total = new CXF[mhpd+1];
 
 		CXV3** EcPO = new CXV3*[tnum];
-		for(int i = 0; i < tnum; i++){
+		for(int i = 0; i < tnum; ++i){
 			EcPO[i] = new CXV3[mhpd];
 		 }
 
-		START1=clock();
 
 
 //		double PHI;
@@ -409,7 +380,7 @@ int main(int argc, char *argv[]) {
 		getSourcePoint(cellSize, tnum, xdnum, source);
 
 //		for (int i = 0  ; i < phi2.size(); i++) {
-		for (int i = 0  ; i < PointOfAngle; i++) {
+		for (int i = 0  ; i < PointOfAngle; ++i) {
 
 			PHI[i] = (i*Pstep + Pmin) * PI / 180;
 //			PHI[i] = phi2[i] * PI / 180;
@@ -440,7 +411,7 @@ int main(int argc, char *argv[]) {
 						 kdotr, RefPoint);
 
 //			exit(0);
-			for(int ii = 0 ;ii < NumberOfFrequencyPoints; ii++){
+			for(int ii = 0 ;ii < NumberOfFrequencyPoints; ++ii){
 				f = (ii*Fstep + Fmin);
 				double k0 = 2 * PI * f / c;
 				calEq24(EpoA, kdotr, RefPoint,
@@ -455,17 +426,15 @@ int main(int argc, char *argv[]) {
 
 				Atheta_total[mhpd]=CXF(0,0);
 				Aphi_total[mhpd]=CXF(0,0);
+				SumPO(mhpd, Atheta_total, Aphi_total);
 
 
-
-
-
-				for(int n =0; n< mhpd; n++){
-
-					Atheta_total[mhpd]+=Atheta_total[n];
-					Aphi_total[mhpd]+=Aphi_total[n];
-
-				}
+//				for(int n =0; n< mhpd; n++){
+//
+//					Atheta_total[mhpd]+=Atheta_total[n];
+//					Aphi_total[mhpd]+=Aphi_total[n];
+//
+//				}
 
 
 
@@ -518,33 +487,18 @@ int main(int argc, char *argv[]) {
 		for(int i = 0; i<tnum ; ++i){
 
 		    delete [] EpoA[i];
+		    delete [] EcPO[i];
+		    delete [] kdotr[i];
+		    delete [] RefPoint[i];
+
+
 		  }
 		delete[] EpoA;
-
-		for(int i = 0; i < tnum; i++){
-
-			delete EcPO[i];
-
-		}
-
 		delete[] EcPO;
-
-
-
-		for(int i = 0; i<tnum ; ++i){
-
-		    delete [] kdotr[i];
-		  }
 		delete[] kdotr;
-
-
-		delete[] refpoint_tube; //The source point on the object
-
-		for(int i = 0; i<tnum ; ++i){
-
-		    delete [] RefPoint[i];
-		  }
 		delete [] RefPoint;
+
+
 
 //		delete[] Atheta;
 //		delete[] Aphi;
@@ -605,7 +559,15 @@ int main(int argc, char *argv[]) {
 }
 
 
+void SumPO(const int &mhpd, CXF *Atheta_total, CXF *Aphi_total){
+	for(int n =0; n< mhpd; ++n){
 
+		Atheta_total[mhpd]+=Atheta_total[n];
+		Aphi_total[mhpd]+=Aphi_total[n];
+
+	}
+
+}
 
 
 
@@ -623,24 +585,37 @@ bool intersectPlane(const Vector3 &n, const Vector3 &p0, const Vector3 &l0,
 
 	return false;
 }
+
+//Ray-Plane Intersection
+//Ref: https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
+void intersectPlane1(const Vector3 &n, const Vector3 &p0, const Vector3 &l0,
+		 double &t) {
+	// assuming vectors are all normalized
+		Vector3 p0l0 = p0 - l0;
+		t = p0l0 * n ;
+
+}
+
 void ComplexField(const Vector3 &R, const double &kr, const double k0, CXV3 &C) {
 //	CXF expvalue = exp(j * (kr) / c * frequency * multiply2 * PI);
-	double neg=-1;
 
-	CXF expvalue = exp(j * (kr)* neg *k0);
-	C = CXV3(CXF(R.x, 0) * expvalue, CXF(R.y, 0) * expvalue,
-			CXF(R.z, 0) * expvalue);
+//	CXF expvalue = exp(j * kr* neg *k0);
+	CXF expvalue = cos(-1*kr *k0)+j*sin(-1*kr *k0);
+
+//	C = CXV3(CXF(R.x, 0) * expvalue, CXF(R.y, 0) * expvalue,
+//			CXF(R.z, 0) * expvalue);
+	C = CXV3(R.x*  expvalue, R.y* expvalue, R.z * expvalue);
 }
 
 
 
-double SafeAcos(double x) {
-	if (x < -1.0)
-		x = -1.0;
-	else if (x > 1.0)
-		x = 1.0;
-	return acos(x);
-}
+//double SafeAcos(double x) {
+//	if (x < -1.0)
+//		x = -1.0;
+//	else if (x > 1.0)
+//		x = 1.0;
+//	return acos(x);
+//}
 
 void rotate_THETA_then_PHI(Vector3 *R1, int n, double THETA, double PHI) {
 //	//Roate X Axis (THETA)
@@ -653,14 +628,14 @@ void rotate_THETA_then_PHI(Vector3 *R1, int n, double THETA, double PHI) {
 	//Roate Y Axis (THETA)
 	Vector3* R2 = new Vector3[n];
 
-	for (int i = 0; i < n; i++) {
+	for (int i = 0; i < n; ++i) {
 		R2[i].x = cos(THETA) * R1[i].x - sin(THETA) * R1[i].z;
 		R2[i].y = R1[i].y;
 		R2[i].z = sin(THETA) * R1[i].x + cos(THETA) * R1[i].z;
 	}
 
 	//Roate Z Axis (PHI)
-	for (int i = 0; i < n; i++) {
+	for (int i = 0; i < n; ++i) {
 		R1[i].x = cos(PHI) * R2[i].x - sin(PHI) * R2[i].y;
 		R1[i].y = sin(PHI) * R2[i].x + cos(PHI) * R2[i].y;
 		R1[i].z = R2[i].z;
@@ -738,7 +713,7 @@ void getAntPlane(const double&THETA, const double &PHI, const double &distance,
 	Vector3 antc, cros_1, cros_2, ant_Nd;
 
 
-	for (int i = 0; i < tnum; i++) {
+	for (int i = 0; i < tnum; ++i) {
 		antt[i].x = 0 + (i % xdnum) * cellSize;
 		antt[i].y = 0 + i / xdnum * cellSize;
 		antt[i].z = 0;
@@ -753,7 +728,7 @@ void getAntPlane(const double&THETA, const double &PHI, const double &distance,
 
 
 
-	for (int i = 0; i < tnum; i++) {
+	for (int i = 0; i < tnum; ++i) {
 		antt[i] = antt[i] - antc;
 	}
 
@@ -768,7 +743,7 @@ void getAntPlane(const double&THETA, const double &PHI, const double &distance,
 	ant_Nd = distance * ant_N;
 
 
-	for (int i = 0; i < tnum; i++) {
+	for (int i = 0; i < tnum; ++i) {
 
 		antt[i] = antt[i] - ant_Nd;
 	}
@@ -832,12 +807,6 @@ int GeometricalOptics(const Vector3 &raypoint, const BVH &bvh, const Vector3 &ki
     double t=0;
 	Ray ray(raypoint, kin);
 	IntersectionInfo I;
-//	for(int i = 0 ; i <MaximumNumberOfReflections; i++){
-//		PO[i]=0*Ei;
-//		kdotr[i] =0;
-//		RefPoint[i] =Vector3(0,0,0);
-//	}
-
 
 	bool hit = bvh.getIntersection(ray, &I, false);
 
@@ -888,7 +857,7 @@ int GeometricalOptics(const Vector3 &raypoint, const BVH &bvh, const Vector3 &ki
 //				Er = (-1) * (Ei)+(2*(nor^Ei)^nor);
 
 
-				PO[hitnumber-1]  = nor^(kipo^Ei)/abs((kipo)*nor);
+				PO[hitnumber-1]  = nor^(kipo^Ei)/abs(kipo*nor);
 				kdotr[hitnumber-1] = I.t;
 				RefPoint[hitnumber-1] = I.hit;
 
@@ -902,7 +871,7 @@ int GeometricalOptics(const Vector3 &raypoint, const BVH &bvh, const Vector3 &ki
 						- (-1) * (Ed * theta_ci_h) * theta_cr_h;
 //				Er = (-1) * (Ed)+(2*(nor^Ed)^nor);
 
-				PO[hitnumber-1]  = nor^(kipo^Ed)/abs((kipo)*nor);
+				PO[hitnumber-1]  = nor^(kipo^Ed)/abs(kipo*nor);
 
 				kdotr[hitnumber-1] = I.t+t;
 				RefPoint[hitnumber-1] = I.hit;
@@ -915,13 +884,13 @@ int GeometricalOptics(const Vector3 &raypoint, const BVH &bvh, const Vector3 &ki
 			if (hitnumber == 1) {
 //				Ed = Ei;
 				Er =(-1)* Ei;
-				PO[hitnumber-1] = nor^(kipo^Ei)/abs((kipo)*nor);
+				PO[hitnumber-1] = nor^(kipo^Ei)/abs(kipo*nor);
 				kdotr[hitnumber-1] = I.t;
 				RefPoint[hitnumber-1] = I.hit;
 			} else{
 				Ed = Er;
 				Er = (-1)*Ed;
-				PO[hitnumber-1]  = nor^(kipo^Ed)/abs((kipo)*nor);
+				PO[hitnumber-1]  = nor^(kipo^Ed)/abs(kipo*nor);
 				kdotr[hitnumber-1] = I.t + t;
 				RefPoint[hitnumber-1] = I.hit;
 
@@ -968,7 +937,7 @@ void getCSTformatData(const double *Theta, const double *Phi, const double *ReE_
 		cout<< CSTformat << "  \n";
 		outFile.open(CSTformat.c_str());
 
-		for(int n=0 ; n<PointOfAngle ; n++){
+		for(int n=0 ; n<PointOfAngle ; ++n){
 
 			outFile << Theta[n]/PI*180<<"\t"<<Phi[n]/PI*180<<"\t"<<ReE_Theta[n]<<"\t"
 					<< ImE_Theta[n]<<"\t"<<ReE_Phi[n]<<"\t"<<ImE_Phi[n]<<endl;
@@ -996,13 +965,15 @@ void calEq24( Vector3 **EpoA,  double **kdotr,  Vector3 **RefPoint,
 	CXV3 EcPO;
 	CXF Ex,  Ey,  SingleRayAtheta,  SingleRayAphi;
 
-	for(int i = 0 ; i<MaximumNumberOfReflections ; i++){
+	for(int i = 0 ; i<MaximumNumberOfReflections ; ++i){
 		AthetaTotal[i]=CXF(0,0);
 		AphiTotal[i] =CXF(0,0);
 		for(int n =0 ; n<tnum ; n++){
 			if(hitnum_tube[n]!=0 && hitnum_tube[n]>= i+1){
-				intersectPlane((-1 * kin), tube0,
-						RefPoint[n][i], (-1 * kin), RetDis);
+//				intersectPlane((-1 * kin), tube0,
+//						RefPoint[n][i], (-1 * kin), RetDis);
+				intersectPlane1((-1 * kin), tube0,
+						RefPoint[n][i],  RetDis);
 
 				TotalDis= RetDis + kdotr[n][i];
 

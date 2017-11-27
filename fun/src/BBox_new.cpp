@@ -34,7 +34,7 @@ double BBox::surfaceArea() const {
 bool BBox::intersect(const Ray& ray, double *tnear, double *tfar) const {
   Vector3 tbot = ray.inv_d.cmul(min - ray.o);
   Vector3 ttop = ray.inv_d.cmul(max - ray.o);
-  
+
   Vector3 tmin = ::min(ttop, tbot);
   Vector3 tmax = ::max(ttop, tbot);
 
