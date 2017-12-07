@@ -33,7 +33,7 @@ public:
 	CXV3 operator*(CXF b)         const { return CXV3(x*b, y*b, z*b); }
 	CXV3 operator/(CXF b)         const { return CXV3(x/b, y/b, z/b); }
 	CXF  operator*(const CXV3& b) const { return x*b.x + y*b.y + z*b.z; }	// dot (inner) product
-	CXV3 operator^(const CXV3& b) const { return CXV3(y*b.z-z*b.y, z*b.x-x*b.z, x*b.y-y*b.z); } // Cross Product
+	CXV3 operator^(const CXV3& b) const { return CXV3(y*b.z-z*b.y, z*b.x-x*b.z, x*b.y-y*b.x); } // Cross Product
 	CXV3 operator/(const CXV3& b) const { return CXV3(x/b.x, y/b.y, z/b.z); }	// sample-wise div
 	//new function
 	CXV3 operator+(const Vector3 &b) const { return CXV3(x+b.x, y+b.y, z+b.z); }
