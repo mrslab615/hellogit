@@ -99,7 +99,7 @@ void movAntToFarField(const Vector3 *antt, const int &tnum,  double &distance, V
 	cros_1 = antt[1] - antt[0];
 	cros_2 = antt[tnum-1] - antt[0];
 
-	kin = normalize(cros_2 ^ cros_1);
+	kin = normalize(cros_1 ^ cros_2);
 
 	ant_Nd = distance * kin;
 
@@ -178,17 +178,14 @@ void intersectPlane1(const Vector3 &n, const Vector3 &p0, const Vector3 &l0,
 		 double &t);
 
 
-
-
-
 int main(int argc, char *argv[]) {
 
 
 //-------------------------------input .3ds model---------------------------------
 //	string input = "/home/user/cuda-workspace/lib3/Ball.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/plate1515.3ds";
-	string input = "/home/user/cuda-workspace/lib3/dihedral 45d.3ds";
-//	string input = "/home/user/cuda-workspace/lib3/dihedral m.3ds";
+//	string input = "/home/user/cuda-workspace/lib3/dihedral 45d.3ds";
+	string input = "/home/user/cuda-workspace/lib3/dihedral m.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/dihedral 22pt5d.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/trihedral30.3ds";
 //	string input = "/home/user/cuda-workspace/lib3/threeinone.3ds";
@@ -307,7 +304,6 @@ int main(int argc, char *argv[]) {
 		int NumberOfFrequencyPoints = (Fmax-Fmin)/Fstep+1;
 		double lambdac = c / fcell;
 //		cout<<"L="<<lambda<<endl;
-//		exit(0);
 		double Lx = 0.6;
 		double Ly = 0.6;
 		double rayPerWavelenth = 16;
@@ -323,10 +319,6 @@ int main(int argc, char *argv[]) {
 		double distance = 40;
 //		distance > 2D^2/lambda
 		string POL = "H";
-//		int rnum = xdnum * ydnum;
-//		int tnum = (xdnum - 1) * (ydnum - 1);
-
-//		int rnum = (xdnum+1) * (ydnum+1);
 		int tnum = xdnum * ydnum;
 		Vector3* source = new Vector3[tnum]; //raytube
 		Vector3* tube = new Vector3[tnum]; //raytube
@@ -368,14 +360,10 @@ int main(int argc, char *argv[]) {
 			EcPO[i] = new CXV3[mhpd];
 		 }
 
-
-
-//		double PHI;
 		Vector3 phi_h;
 		Vector3 theta_h;
 		Vector3 Ei;
 		Vector3 ktin;
-
 
 		getSourcePoint(cellSize, tnum, xdnum, source);
 
@@ -385,7 +373,7 @@ int main(int argc, char *argv[]) {
 			PHI[i] = (i*Pstep + Pmin) * PI / 180;
 //			PHI[i] = phi2[i] * PI / 180;
 
-			THETA[i] = -90 * PI / 180;
+			THETA[i] = 90 * PI / 180;
 
 
 	//		PHI =  phi2[i]*PI/180;
@@ -394,23 +382,15 @@ int main(int argc, char *argv[]) {
 			rotateTHETAThenPHI(source, tnum, THETA[i], PHI[i], tube) ;
 
 			movAntToFarField(tube, tnum, distance, tube, ktin);
-//			getAntPlane(THETA[i], PHI[i], distance,
-//					cellSize, tnum, xdnum, tube,
-//					  kt_in[0]);
-
 
 
 			initializeEF(POL, ktin, theta_h, phi_h, Ei);
 
-
-
-	//		cout<< "THETA_"<<"("<<theta_h.x<<","<<theta_h.y<<","<<theta_h.z<<")"<<endl;
-	//		cout<< "PHI_"<<"("<<phi_h.x<<","<<phi_h.y<<","<<phi_h.z<<")"<<endl;
 			calAllGeoOpt(tnum, tube ,bvh, ktin, Ei, mhpd,
 						  k_tube,  hitnum_tube, EpoA,
 						 kdotr, RefPoint);
 
-//			exit(0);
+
 			for(int ii = 0 ;ii < NumberOfFrequencyPoints; ++ii){
 				f = (ii*Fstep + Fmin);
 				double k0 = 2 * PI * f / c;
@@ -419,10 +399,6 @@ int main(int argc, char *argv[]) {
 						tnum, tube[0], cellSize, k0,
 						theta_h, phi_h, Atheta_total,  Aphi_total);
 
-
-
-
-	//			exit(0);
 
 				Atheta_total[mhpd]=CXF(0,0);
 				Aphi_total[mhpd]=CXF(0,0);
@@ -463,22 +439,10 @@ int main(int argc, char *argv[]) {
 //							ReE_Phi, ImE_Phi, PointOfAngle, NumberOfFrequencyPoints, f);
 			getCSTformatDataf(THETA, PHI, ReE_Theta, ImE_Theta,
 							ReE_Phi, ImE_Phi, PointOfAngle, NumberOfFrequencyPoints);
-//			END1=clock();
-//				cout << endl << "進行運算所花費的時間：" << (END1- START1) / CLOCKS_PER_SEC << " S" << endl;
-//				exit(0);
-//
 
 
 		}
-//		getCSTformatData(THETA, PHI, ReE_Theta, ImE_Theta,
-//						ReE_Phi, ImE_Phi, phi2.size(), NumberOfFrequencyPoints, ii);
-//		getCSTformatDataf(THETA, PHI, ReE_Theta, ImE_Theta,
-//						ReE_Phi, ImE_Phi, PointOfAngle, NumberOfFrequencyPoints);
 
-
-
-
-//		getMatlabData(POL, PointOfAngle, RCSTheta, RCSPhi);
 		delete[] source;
 		delete[] tube;
 		delete[] k_tube;
@@ -499,9 +463,6 @@ int main(int argc, char *argv[]) {
 		delete [] RefPoint;
 
 
-
-//		delete[] Atheta;
-//		delete[] Aphi;
 		delete[] Atheta_total;
 		delete[] Aphi_total;
 		delete[] RCSTheta;
